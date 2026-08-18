@@ -1,0 +1,52 @@
+name: Build English Unsigned IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: Run iOS Simulator tests after building
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  build:
+    name: Build English IPA
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Select stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Build and test
+        if: ${{ inputs.run_tests }}
+        run: ./build.sh --test
+
+      - name: Build without simulator tests
+        if: ${{ !inputs.run_tests }}
+        run: ./build.sh
+
+      - name: Give the artifact a clear name
+        run: mv dist/PaopaoLocationSpoofer-unsigned.ipa dist/Location-Spoofer-English-unsigned.ipa
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Location-Spoofer-English-unsigned
+          path: dist/Location-Spoofer-English-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
