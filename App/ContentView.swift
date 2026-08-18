@@ -21,8 +21,8 @@ struct ContentView: View {
                         .font(.system(size: 48)).foregroundStyle(.blue)
                     ProgressView()
                     Text(runtimeMode.hasSelectedMode && runtimeMode.mode == .localWiFi
-                         ? "正在初始化地图与本地代理…"
-                         : "正在初始化地图…")
+                         ? "Initializing the map and local proxy…"
+                         : "Initializing the map…")
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
             case .setup:
@@ -51,7 +51,7 @@ struct ContentView: View {
     private func bootstrap() async {
         guard runtimeMode.hasSelectedMode else {
             ProxyManager.shared.stop()
-            RuntimeLogger.info("APP", "Startup", "尚未选择运行模式，跳过本地 CA 和代理初始化")
+            RuntimeLogger.info("APP", "Startup", "No runtime mode selected; skipping local CA and proxy initialization")
             setup.requestModeSelection()
             phase = .setup
             return
@@ -76,12 +76,12 @@ struct ContentView: View {
         } else {
             ProxyManager.shared.stop()
             BackgroundKeepAlive.shared.stop()
-            RuntimeLogger.info("APP", "Startup", "第三方代理测试模式：跳过本地 CA、代理和环境检测")
+            RuntimeLogger.info("APP", "Startup", "Third-party proxy mode: skipping the local CA, proxy, and environment check")
         }
         do {
             try CoordinateStorageMigration.migrateIfNeeded(favorites: FavoriteLocationStore())
         } catch {
-            RuntimeLogger.error("APP", "Startup", "旧坐标数据迁移失败，将在下次启动重试", error: error)
+            RuntimeLogger.error("APP", "Startup", "Legacy coordinate migration failed; it will be retried on the next launch", error: error)
         }
 
         // MapHomeView is intentionally constructed only after this required
@@ -89,15 +89,15 @@ struct ContentView: View {
         // into an unknown Apple Maps coordinate system.
         let mapCoordinateSystem = await CoordinateConverter.resolveInitialMapCoordinateSystem()
         guard !Task.isCancelled else { return }
-        RuntimeLogger.info("APP", "Startup", "地图坐标标准初始化完成，开始后续启动流程", details: [
-            "地图标准": mapCoordinateSystem.rawValue,
-            "使用兜底": String(CoordinateConverter.initialMapCoordinateSystemUsedFallback)
+        RuntimeLogger.info("APP", "Startup", "Map coordinate-system initialization completed; continuing startup", details: [
+            "Map coordinate system": mapCoordinateSystem.rawValue,
+            "Used fallback": String(CoordinateConverter.initialMapCoordinateSystemUsedFallback)
         ])
 
         // Resolve the first map center before constructing MapHomeView. This
         // prevents a Shenzhen/cache frame followed by a second realtime frame.
         if LastCoordinateStore.load() == nil {
-            RuntimeLogger.info("APP", "Startup", "没有持久化图钉，地图创建前请求实时定位")
+            RuntimeLogger.info("APP", "Startup", "No saved pin; requesting real-time location before creating the map")
             if let realtime = await RealtimeLocationManager.shared.requestLocation() {
                 let mapCoordinateSystemChange = CoordinateConverter.correctMapCoordinateSystemUsingRealtime(realtime)
                 let pair = CoordinateConverter.coordinatePair(
@@ -106,28 +106,28 @@ struct ContentView: View {
                     mapCoordinateSystem: .wgs84
                 )
                 LastCoordinateStore.save(coordinatePair: pair, zoomMeters: 1_000)
-                RuntimeLogger.info("APP", "Startup", "已使用实时定位准备唯一初始地图状态", details: [
-                    "地图标准": CoordinateConverter.currentMapCoordinateSystem.rawValue,
-                    "修正兜底标准": String(mapCoordinateSystemChange != nil),
-                    "缩放米": "1000"
+                RuntimeLogger.info("APP", "Startup", "Prepared the initial map state using real-time location", details: [
+                    "Map coordinate system": CoordinateConverter.currentMapCoordinateSystem.rawValue,
+                    "Corrected fallback system": String(mapCoordinateSystemChange != nil),
+                    "Zoom meters": "1000"
                 ])
                 RealtimeLocationTrace.coordinate(
-                    "地图创建前取得的初始实时位置（WGS-84）",
+                    "Initial real-time location obtained before map creation (WGS-84)",
                     coordinate: realtime
                 )
             } else {
-                RuntimeLogger.warning("APP", "Startup", "地图创建前无法取得实时定位，唯一初始位置使用深圳", details: [
-                    "地图标准": mapCoordinateSystem.rawValue,
-                    "缩放米": "1000"
+                RuntimeLogger.warning("APP", "Startup", "Unable to obtain real-time location before map creation; using Shenzhen as the initial location", details: [
+                    "Map coordinate system": mapCoordinateSystem.rawValue,
+                    "Zoom meters": "1000"
                 ])
             }
         } else {
-            RuntimeLogger.info("APP", "Startup", "已找到持久化图钉，直接准备唯一初始地图状态")
+            RuntimeLogger.info("APP", "Startup", "Saved pin found; prepared the initial map state directly")
         }
         guard !Task.isCancelled else { return }
 
         setup.completeSetup()
-        RuntimeLogger.info("APP", "Startup", "启动门禁全部完成，现在创建 MapHomeView")
+        RuntimeLogger.info("APP", "Startup", "All startup prerequisites completed; creating MapHomeView")
         phase = .map
     }
 
@@ -177,28 +177,28 @@ struct ContentView: View {
         switch prompt.requirement {
         case .required:
             let details = prompt.releaseNotes
-                ?? "更新说明暂时无法加载，请前往最新 Release 页面查看。"
+                ?? "Release notes are temporarily unavailable. Open the latest Release page for details."
             return Alert(
-                title: Text("需要更新"),
+                title: Text("Update Required"),
                 message: Text(
-                    "当前版本 \(prompt.currentVersion) 已停止支持，请更新到 \(prompt.latestVersion) 后继续使用。\n\n\(details)"
+                    "Version \(prompt.currentVersion) is no longer supported. Update to \(prompt.latestVersion) to continue.\n\n\(details)"
                 ),
-                dismissButton: .default(Text("立即更新")) {
+                dismissButton: .default(Text("Update Now")) {
                     openUpdatePage(requiredPrompt: prompt)
                 }
             )
         case .recommended:
             let details = prompt.releaseNotes
-                ?? "更新说明暂时无法加载，请前往最新 Release 页面查看。"
+                ?? "Release notes are temporarily unavailable. Open the latest Release page for details."
             return Alert(
-                title: Text("发现新版本"),
+                title: Text("Update Available"),
                 message: Text(
-                    "当前版本 \(prompt.currentVersion)，最新版本 \(prompt.latestVersion)。\n\n\(details)"
+                    "Installed version: \(prompt.currentVersion). Latest version: \(prompt.latestVersion).\n\n\(details)"
                 ),
-                primaryButton: .default(Text("前往更新")) {
+                primaryButton: .default(Text("Open Download Page")) {
                     openUpdatePage(requiredPrompt: nil)
                 },
-                secondaryButton: .cancel(Text("稍后"))
+                secondaryButton: .cancel(Text("Later"))
             )
         }
     }

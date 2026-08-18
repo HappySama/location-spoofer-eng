@@ -92,31 +92,31 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
 
     func requestLocation() async -> CLLocationCoordinate2D? {
         guard activeRequest == nil else {
-            RuntimeLogger.warning("APP", "实时定位", "忽略重复 CLLocationManager 请求", details: [
-                "活动requestID": activeRequest.map { String($0.id) } ?? "nil",
-                "活动阶段": activeRequest.map { phaseName($0.phase) } ?? "nil"
+            RuntimeLogger.warning("APP", "Real-Time Location", "Ignored duplicate CLLocationManager request", details: [
+                "Active request ID": activeRequest.map { String($0.id) } ?? "nil",
+                "Active phase": activeRequest.map { phaseName($0.phase) } ?? "nil"
             ])
             return nil
         }
 
         authorizationStatus = driver.authorizationStatus
-        RuntimeLogger.info("APP", "实时定位", "CLLocationManager 请求入口", details: [
-            "授权状态": authorizationName(authorizationStatus),
-            "内存缓存存在": String(location != nil),
-            "系统缓存存在": String(driver.location != nil)
+        RuntimeLogger.info("APP", "Real-Time Location", "CLLocationManager request received", details: [
+            "Authorization": authorizationName(authorizationStatus),
+            "In-memory cache available": String(location != nil),
+            "System cache available": String(driver.location != nil)
         ])
         guard authorizationStatus != .denied, authorizationStatus != .restricted else {
-            RuntimeLogger.warning("APP", "实时定位", "授权状态不允许定位", details: [
-                "授权状态": authorizationName(authorizationStatus)
+            RuntimeLogger.warning("APP", "Real-Time Location", "Authorization status does not permit location access", details: [
+                "Authorization": authorizationName(authorizationStatus)
             ])
             return nil
         }
 
         if let cached = freshestCachedLocation() {
             location = cached
-            RealtimeLocationTrace.log("使用 CLLocationManager 新鲜缓存", location: cached, details: [
-                "来源": "manager-memory-or-system",
-                "缓存上限秒": String(Int(cacheMaxAge))
+            RealtimeLocationTrace.log("Using a fresh CLLocationManager cache sample", location: cached, details: [
+                "Source": "manager-memory-or-system",
+                "Maximum cache age (seconds)": String(Int(cacheMaxAge))
             ])
             return cached.coordinate
         }
@@ -124,10 +124,10 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
         nextRequestID &+= 1
         let requestID = nextRequestID
         isRequesting = true
-        RuntimeLogger.info("APP", "实时定位", "创建 CLLocationManager 请求", details: [
+        RuntimeLogger.info("APP", "Real-Time Location", "Created CLLocationManager request", details: [
             "requestID": String(requestID),
-            "授权状态": authorizationName(authorizationStatus),
-            "初始阶段": "awaitingAuthorization"
+            "Authorization": authorizationName(authorizationStatus),
+            "Initial phase": "awaitingAuthorization"
         ])
 
         return await withTaskCancellationHandler {
@@ -140,7 +140,7 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
                 )
 
                 if authorizationStatus == .notDetermined {
-                    RuntimeLogger.info("APP", "实时定位", "请求前台定位授权", details: [
+                    RuntimeLogger.info("APP", "Real-Time Location", "Requesting foreground location authorization", details: [
                         "requestID": String(requestID)
                     ])
                     scheduleTimeout(for: requestID, nanoseconds: fallbackTimeoutNanoseconds)
@@ -170,10 +170,10 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         MainActor.assumeIsolated {
         authorizationStatus = driver.authorizationStatus
-        RuntimeLogger.info("APP", "实时定位", "定位授权状态变化", details: [
-            "授权状态": authorizationName(authorizationStatus),
+        RuntimeLogger.info("APP", "Real-Time Location", "Location authorization changed", details: [
+            "Authorization": authorizationName(authorizationStatus),
             "requestID": activeRequest.map { String($0.id) } ?? "nil",
-            "阶段": activeRequest.map { phaseName($0.phase) } ?? "idle"
+            "Phase": activeRequest.map { phaseName($0.phase) } ?? "idle"
         ])
         switch authorizationStatus {
         case .authorizedAlways, .authorizedWhenInUse:
@@ -192,10 +192,10 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
 
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         MainActor.assumeIsolated {
-        RuntimeLogger.info("APP", "实时定位", "CLLocationManager 返回样本批次", details: [
-            "样本数": String(locations.count),
+        RuntimeLogger.info("APP", "Real-Time Location", "CLLocationManager returned a batch of samples", details: [
+            "Sample count": String(locations.count),
             "requestID": activeRequest.map { String($0.id) } ?? "nil",
-            "阶段": activeRequest.map { phaseName($0.phase) } ?? "idle"
+            "Phase": activeRequest.map { phaseName($0.phase) } ?? "idle"
         ])
         for (index, candidate) in locations.enumerated() {
             let valid = Self.isValid(candidate)
@@ -203,12 +203,12 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
                 candidate.timestamp >= $0.addingTimeInterval(-1)
             } ?? false
             RealtimeLocationTrace.log(
-                valid ? "检查 CLLocationManager 样本" : "拒绝 CLLocationManager 样本：坐标或精度无效",
+                valid ? "Inspecting CLLocationManager sample" : "Rejected CLLocationManager sample: invalid coordinates or accuracy",
                 location: candidate,
                 details: [
-                    "批次索引": String(index),
-                    "基础校验通过": String(valid),
-                    "满足当前请求时间窗": String(freshEnough)
+                    "Batch index": String(index),
+                    "Basic validation passed": String(valid),
+                    "Within current request window": String(freshEnough)
                 ],
                 level: valid ? .info : .warning
             )
@@ -225,17 +225,17 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
                   $0.timestamp >= startedAt.addingTimeInterval(-1)
               }) else {
             if let request = activeRequest, request.phase != .awaitingAuthorization {
-                RuntimeLogger.warning("APP", "实时定位", "本批次没有可完成当前请求的样本", details: [
+                RuntimeLogger.warning("APP", "Real-Time Location", "This batch contains no sample that can complete the current request", details: [
                     "requestID": String(request.id),
-                    "阶段": phaseName(request.phase),
-                    "有效样本数": String(validLocations.count)
+                    "Phase": phaseName(request.phase),
+                    "Valid sample count": String(validLocations.count)
                 ])
             }
             return
         }
-        RealtimeLocationTrace.log("接受 CLLocationManager 样本并完成请求", location: latest, details: [
+        RealtimeLocationTrace.log("Accepted CLLocationManager sample and completed the request", location: latest, details: [
             "requestID": String(request.id),
-            "阶段": phaseName(request.phase)
+            "Phase": phaseName(request.phase)
         ])
         finishRequest(id: request.id, coordinate: latest.coordinate)
         }
@@ -244,7 +244,7 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         MainActor.assumeIsolated {
         guard let request = activeRequest else { return }
-        RuntimeLogger.warning("APP", "定位", "定位回调失败", details: [
+        RuntimeLogger.warning("APP", "Location", "Location callback failed", details: [
             "requestID": String(request.id),
             "error": error.localizedDescription
         ])
@@ -270,10 +270,10 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
             let valid = Self.isValid(candidate)
             let age = abs(candidate.timestamp.timeIntervalSince(now))
             if !valid || age > cacheMaxAge {
-                RealtimeLocationTrace.log("跳过 CLLocationManager 缓存样本", location: candidate, details: [
-                    "基础校验通过": String(valid),
-                    "缓存时效通过": String(age <= cacheMaxAge),
-                    "缓存上限秒": String(Int(cacheMaxAge))
+                RealtimeLocationTrace.log("Skipped CLLocationManager cached sample", location: candidate, details: [
+                    "Basic validation passed": String(valid),
+                    "Cache-age check passed": String(age <= cacheMaxAge),
+                    "Maximum cache age (seconds)": String(Int(cacheMaxAge))
                 ], level: .warning)
             }
         }
@@ -305,13 +305,13 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
         guard let request = activeRequest, request.id == requestID else { return }
         switch request.phase {
         case .awaitingAuthorization:
-            RuntimeLogger.warning("APP", "定位", "等待定位授权超时", details: ["requestID": String(requestID)])
+            RuntimeLogger.warning("APP", "Location", "Timed out waiting for location authorization", details: ["requestID": String(requestID)])
             finishRequest(id: requestID, coordinate: nil)
         case .oneShot:
-            RuntimeLogger.warning("APP", "定位", "单次定位超时，切换持续定位", details: ["requestID": String(requestID)])
+            RuntimeLogger.warning("APP", "Location", "One-shot location request timed out; switching to continuous updates", details: ["requestID": String(requestID)])
             beginFallback(for: requestID)
         case .continuousFallback:
-            RuntimeLogger.warning("APP", "定位", "持续定位超时", details: ["requestID": String(requestID)])
+            RuntimeLogger.warning("APP", "Location", "Continuous location updates timed out", details: ["requestID": String(requestID)])
             finishRequest(id: requestID, coordinate: nil)
         }
     }
@@ -323,9 +323,9 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
         request.phase = .oneShot
         request.startedAt = Date()
         activeRequest = request
-        RuntimeLogger.info("APP", "实时定位", "开始 CLLocationManager 单次定位", details: [
+        RuntimeLogger.info("APP", "Real-Time Location", "Starting one-shot CLLocationManager request", details: [
             "requestID": String(requestID),
-            "超时毫秒": String(oneShotTimeoutNanoseconds / 1_000_000)
+            "Timeout milliseconds": String(oneShotTimeoutNanoseconds / 1_000_000)
         ])
         scheduleTimeout(for: requestID, nanoseconds: oneShotTimeoutNanoseconds)
         driver.requestLocation()
@@ -337,9 +337,9 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
               request.phase == .oneShot else { return }
         request.phase = .continuousFallback
         activeRequest = request
-        RuntimeLogger.info("APP", "实时定位", "开始 CLLocationManager 持续定位兜底", details: [
+        RuntimeLogger.info("APP", "Real-Time Location", "Starting continuous CLLocationManager fallback", details: [
             "requestID": String(requestID),
-            "超时毫秒": String(fallbackTimeoutNanoseconds / 1_000_000)
+            "Timeout milliseconds": String(fallbackTimeoutNanoseconds / 1_000_000)
         ])
         driver.startUpdatingLocation()
         scheduleTimeout(for: requestID, nanoseconds: fallbackTimeoutNanoseconds)
@@ -359,16 +359,16 @@ final class RealtimeLocationManager: NSObject, ObservableObject, CLLocationManag
         isRequesting = false
 
         if coordinate != nil {
-            RuntimeLogger.info("APP", "实时定位", "CLLocationManager 请求完成", details: [
+            RuntimeLogger.info("APP", "Real-Time Location", "CLLocationManager request completed", details: [
                 "requestID": String(requestID),
-                "最终阶段": phaseName(request.phase),
-                "有坐标": "true"
+                "Final phase": phaseName(request.phase),
+                "Has coordinates": "true"
             ])
         } else {
-            RuntimeLogger.warning("APP", "实时定位", "CLLocationManager 请求结束但没有坐标", details: [
+            RuntimeLogger.warning("APP", "Real-Time Location", "CLLocationManager request ended without coordinates", details: [
                 "requestID": String(requestID),
-                "最终阶段": phaseName(request.phase),
-                "有坐标": "false"
+                "Final phase": phaseName(request.phase),
+                "Has coordinates": "false"
             ])
         }
         request.continuation.resume(returning: coordinate)

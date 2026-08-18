@@ -17,7 +17,7 @@ struct BugReportView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     // 说明
-                    Text("遇到问题时，在这里生成 Bug 报告。系统会运行一次诊断测试，并将完整报告复制到剪切板。跳转到 GitHub 后，请粘贴到“App 生成的诊断报告”字段。")
+                    Text("If you encounter a problem, generate a bug report here. The app will run a diagnostic test and copy the complete report to the clipboard. After GitHub opens, paste it into the App-Generated Diagnostic Report field.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -26,8 +26,8 @@ struct BugReportView: View {
                     // 可复现环境
                     Toggle(isOn: $isReproducible) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("可复现环境").font(.subheadline.weight(.medium))
-                            Text("当前设备上问题稳定复现，非偶发性。").font(.caption2).foregroundStyle(.secondary)
+                            Text("Consistently Reproducible").font(.subheadline.weight(.medium))
+                            Text("The problem occurs consistently on this device rather than intermittently.").font(.caption2).foregroundStyle(.secondary)
                         }
                     }
 
@@ -35,7 +35,7 @@ struct BugReportView: View {
 
                     // 问题描述
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("问题描述").font(.subheadline.weight(.medium))
+                        Text("Problem Description").font(.subheadline.weight(.medium))
                         TextEditor(text: $description)
                             .font(.caption)
                             .frame(minHeight: 120)
@@ -56,7 +56,7 @@ struct BugReportView: View {
                         if isRunning {
                             ProgressView().tint(.white)
                         }
-                        Text(isRunning ? "正在生成报告…" : "生成 Bug 报告")
+                        Text(isRunning ? "Generating Report…" : "Generate Bug Report")
                             .font(.body.weight(.medium))
                     }
                     .frame(maxWidth: .infinity)
@@ -69,17 +69,17 @@ struct BugReportView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 12)
         }
-        .navigationTitle("报告 Bug")
+        .navigationTitle("Report a Bug")
         .navigationBarTitleDisplayMode(.inline)
-        .alert("已生成", isPresented: $showCopiedAlert) {
-            Button("打开 GitHub 表单") {
+        .alert("Report Generated", isPresented: $showCopiedAlert) {
+            Button("Open GitHub Form") {
                 githubDestination = SafariDestination(url: GitHubSubmission.bugReportURL)
             }
-            Button("稍后再说", role: .cancel) {
+            Button("Later", role: .cancel) {
                 dismiss()
             }
         } message: {
-            Text("Bug 报告已复制到剪切板。请在 GitHub 表单的“App 生成的诊断报告”字段中粘贴并提交。")
+            Text("The bug report has been copied to the clipboard. Paste it into the App-Generated Diagnostic Report field in the GitHub form, then submit it.")
         }
         .sheet(item: $githubDestination) { destination in
             SafariView(url: destination.url)
@@ -95,9 +95,9 @@ struct BugReportView: View {
                 do {
                     let response = try await thirdPartyProxy.query()
                     let active = response.success && response.latitude != nil && response.longitude != nil
-                    testLog = "第三方代理测试模式：模块连接成功；已保存坐标=\(active ? "是" : "否")"
+                    testLog = "Third-Party Proxy Mode: module connection succeeded; saved coordinates = \(active ? "yes" : "no")"
                 } catch {
-                    testLog = "第三方代理测试模式：模块连接失败；\(error.localizedDescription)"
+                    testLog = "Third-Party Proxy Mode: module connection failed; \(error.localizedDescription)"
                 }
             } else {
                 _ = await setup.runVerificationTest()
@@ -114,19 +114,19 @@ struct BugReportView: View {
 
             // 拼接报告
             let report = """
-            ### 环境信息
-            App 版本: \(appVersion)
-            系统版本: iOS \(systemVersion)
-            运行模式: \(runtimeMode.mode.displayName)
-            第三方客户端: \(runtimeMode.mode == .thirdParty ? thirdPartyClient.selectedClient.name : "不适用")
-            可复现环境: \(isReproducible ? "是" : "否")
+            ### Environment
+            App version: \(appVersion)
+            System version: iOS \(systemVersion)
+            Runtime mode: \(runtimeMode.mode.displayName)
+            Third-party client: \(runtimeMode.mode == .thirdParty ? thirdPartyClient.selectedClient.name : "Not applicable")
+            Consistently reproducible: \(isReproducible ? "Yes" : "No")
 
-            ### 问题描述
+            ### Problem Description
             \(description.trimmingCharacters(in: .whitespacesAndNewlines))
 
-            ### 诊断日志
+            ### Diagnostic Logs
             ```
-            \(testLog.isEmpty ? "（无诊断数据）" : testLog)
+            \(testLog.isEmpty ? "(No diagnostic data)" : testLog)
             ```
             """
 

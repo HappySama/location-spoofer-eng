@@ -25,13 +25,13 @@ enum SystemSettingsDestination {
     var manualPath: String {
         switch self {
         case .appPermissions:
-            return "请手动打开「设置」，找到本 App 后检查定位权限。"
+            return "Open Settings manually, select this app, and check its location permission."
         case .general:
-            return "请手动打开「设置 → 通用」。"
+            return "Open Settings → General manually."
         case .wifi:
-            return "请手动打开「设置 → 无线局域网」，进入当前 Wi-Fi 的详情页。"
+            return "Open Settings → Wi-Fi manually, then open the details for the connected network."
         case .locationServices:
-            return "请手动打开「设置 → 隐私与安全性 → 定位服务」。"
+            return "Open Settings → Privacy & Security → Location Services manually."
         }
     }
 }

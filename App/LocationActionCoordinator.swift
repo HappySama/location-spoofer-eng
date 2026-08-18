@@ -77,13 +77,13 @@ final class LocationActionCoordinator: ObservableObject {
         settings.clear()
         state = .idle
         virtualLocationEnabled = false
-        message = "已恢复真实定位"
+        message = "Real location restored"
     }
 
     private func beginApply() -> Bool {
         guard !state.isBusy else { return false }
         state = .applyingLocation
-        message = "启动代理…"
+        message = "Starting proxy…"
         return true
     }
 
@@ -103,28 +103,28 @@ final class LocationActionCoordinator: ObservableObject {
             enabled: true,
             accuracy: favorite.accuracy
         )
-        RuntimeLogger.info("APP", "坐标转换", "设置虚拟定位坐标", details: [
-            "WLOC写入标准": CoordinateConverter.MapCoordinateSystem.wgs84.diagnosticName,
-            "当前地图标准": CoordinateConverter.currentMapCoordinateSystem.diagnosticName,
-            "目标所在区域": CoordinateConverter.usesGCJ02ServiceArea(lat: wgs.latitude, lon: wgs.longitude) ? "国内转换区域" : "国外非转换区域",
-            "取值字段": "coordinatePair.wgs84",
+        RuntimeLogger.info("APP", "Coordinate Conversion", "Set virtual location coordinates", details: [
+            "WLOC coordinate system": CoordinateConverter.MapCoordinateSystem.wgs84.diagnosticName,
+            "Current map coordinate system": CoordinateConverter.currentMapCoordinateSystem.diagnosticName,
+            "Target region": CoordinateConverter.usesGCJ02ServiceArea(lat: wgs.latitude, lon: wgs.longitude) ? "GCJ-02 conversion region" : "Non-conversion region",
+            "Source field": "coordinatePair.wgs84",
             "accuracy": String(favorite.accuracy)
         ])
         state = .idle
         virtualLocationEnabled = true
-        message = "虚拟定位已开启"
+        message = "Virtual location enabled"
         return true
     }
 
     private func finishCancelledApply() {
         state = .idle
-        message = "已取消位置更新"
+        message = "Location update cancelled"
     }
 
     private func failApply(_ error: Error) {
         virtualLocationEnabled = false
-        message = "启动失败"
+        message = "Failed to start"
         state = .failed(error.localizedDescription)
-        RuntimeLogger.error("APP", "Location", "apply失败", error: error)
+        RuntimeLogger.error("APP", "Location", "Failed to apply virtual location", error: error)
     }
 }

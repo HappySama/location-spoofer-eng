@@ -30,7 +30,7 @@ struct RuntimeLogsView: View {
             testPanel
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("过滤日志", text: $logFilter)
+                TextField("Filter logs", text: $logFilter)
                     .textFieldStyle(.plain).font(.caption)
                 if !logFilter.isEmpty {
                     Button { logFilter = "" } label: {
@@ -42,7 +42,7 @@ struct RuntimeLogsView: View {
             if filteredEntries.isEmpty {
                 VStack(spacing: 10) {
                     Image(systemName: "doc.text.magnifyingglass").font(.largeTitle).foregroundStyle(.secondary)
-                    Text(entries.isEmpty ? "暂无运行日志" : "无匹配日志").foregroundStyle(.secondary)
+                    Text(entries.isEmpty ? "No runtime logs" : "No matching logs").foregroundStyle(.secondary)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
@@ -52,15 +52,15 @@ struct RuntimeLogsView: View {
                 }
             }
         }
-        .navigationTitle("运行日志").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Runtime Logs").navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
-            Text("日志自动清理，仅保留近 3 天")
+            Text("Logs are removed automatically after 3 days")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .padding(.vertical, 6)
         }
         .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) { Button("关闭") { dismiss() } }
+            ToolbarItem(placement: .navigationBarLeading) { Button("Close") { dismiss() } }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     UIPasteboard.general.string = entries.map(\.renderedText).joined(separator: "\n")
@@ -70,7 +70,7 @@ struct RuntimeLogsView: View {
                     Image(systemName: copyLogsConfirmed ? "checkmark" : "doc.on.doc")
                 }
                 .disabled(entries.isEmpty)
-                .accessibilityLabel("复制全部日志")
+                .accessibilityLabel("Copy all logs")
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(role: .destructive) {
@@ -79,15 +79,15 @@ struct RuntimeLogsView: View {
                     Image(systemName: "trash")
                 }
                 .disabled(entries.isEmpty)
-                .accessibilityLabel("清空全部日志")
+                .accessibilityLabel("Clear all logs")
             }
         }
-        .confirmationDialog("清空所有运行日志？", isPresented: $showClearConfirm, titleVisibility: .visible) {
-            Button("清空日志", role: .destructive) {
+        .confirmationDialog("Clear All Runtime Logs?", isPresented: $showClearConfirm, titleVisibility: .visible) {
+            Button("Clear Logs", role: .destructive) {
                 RuntimeLogStore.clearAll()
                 entries = []
             }
-            Button("取消", role: .cancel) {}
+            Button("Cancel", role: .cancel) {}
         }
         .task {
             while !Task.isCancelled { refresh(); try? await Task.sleep(nanoseconds: 750_000_000) }
@@ -103,8 +103,8 @@ struct RuntimeLogsView: View {
                         await runThirdPartyConnectionTest()
                     } else {
                         let result = await setup.runVerificationTest()
-                        testResult = result.isSuccess ? "环境检测通过" : "环境检测失败: \(result.id)"
-                        if !result.isSuccess { testResult += "，查看下方日志" }
+                        testResult = result.isSuccess ? "Environment check passed" : "Environment check failed: \(result.id)"
+                        if !result.isSuccess { testResult += "; see the logs below" }
                         testMessage = setup.testLog
                     }
                     isTesting = false; refresh()
@@ -116,7 +116,7 @@ struct RuntimeLogsView: View {
                     } else {
                         Image(systemName: "play.fill").font(.system(size: 13, weight: .bold))
                     }
-                    Text(isTesting ? "正在检测…" : "环境检测").font(.subheadline.weight(.semibold))
+                    Text(isTesting ? "Testing…" : "Run Environment Check").font(.subheadline.weight(.semibold))
                     Spacer()
                     Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).opacity(0.5)
                 }
@@ -132,13 +132,13 @@ struct RuntimeLogsView: View {
             )
             .disabled(isTesting || actions.state.isBusy)
             Text(runtimeMode.mode == .thirdParty
-                 ? "检查第三方模块能否拦截并响应 query 请求；不会写入测试坐标。"
-                 : "依次检查：本地代理 → CA 证书信任 → Wi-Fi 代理链路。")
+                 ? "Checks whether the third-party module intercepts and responds to a query request. It does not write test coordinates."
+                 : "Checks the local proxy, CA certificate trust, and Wi-Fi proxy connection in sequence.")
                 .font(.caption).foregroundStyle(.secondary)
             if !testMessage.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Text("测试日志").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                        Text("Test Log").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
                         Spacer()
                         Button {
                             UIPasteboard.general.string = testMessage
@@ -148,7 +148,7 @@ struct RuntimeLogsView: View {
                             HStack(spacing: 4) {
                                 if testLogCopied {
                                     Image(systemName: "checkmark").font(.system(size: 11, weight: .bold))
-                                    Text("已复制").font(.system(size: 11))
+                                    Text("Copied").font(.system(size: 11))
                                 } else {
                                     Image(systemName: "doc.on.doc").font(.system(size: 11))
                                 }
@@ -180,13 +180,13 @@ struct RuntimeLogsView: View {
             }
             if runtimeMode.mode == .localWiFi {
                 HStack(spacing: 14) {
-                    Label(proxy.isRunning ? "代理运行中" : "代理未运行", systemImage: proxy.isRunning ? "play.circle" : "stop.circle")
-                    Label(setup.canModify ? "可修改" : "不可修改", systemImage: setup.canModify ? "checkmark.shield.fill" : "xmark.shield")
+                    Label(proxy.isRunning ? "Proxy Running" : "Proxy Stopped", systemImage: proxy.isRunning ? "play.circle" : "stop.circle")
+                    Label(setup.canModify ? "Modification Available" : "Modification Unavailable", systemImage: setup.canModify ? "checkmark.shield.fill" : "xmark.shield")
                 }.font(.caption).foregroundStyle(.secondary)
             }
             if !testResult.isEmpty {
                 Text(testResult).font(.footnote.weight(.medium))
-                    .foregroundStyle(testResult.contains("通过") ? .green : .red)
+                    .foregroundStyle(testResult.contains("passed") ? .green : .red)
             }
         }.padding(14).background(Color(.secondarySystemBackground))
     }
@@ -209,7 +209,7 @@ struct RuntimeLogsView: View {
                         HStack(spacing: 4) {
                             if copiedEntryID == entry.id {
                                 Image(systemName: "checkmark").font(.system(size: 11, weight: .bold))
-                                Text("已复制").font(.system(size: 11))
+                                Text("Copied").font(.system(size: 11))
                             } else {
                                 Image(systemName: "doc.on.doc").font(.system(size: 11))
                             }
@@ -240,21 +240,21 @@ struct RuntimeLogsView: View {
         do {
             let response = try await thirdPartyProxy.query()
             let active = response.success && response.latitude != nil && response.longitude != nil
-            testResult = active ? "第三方模块连接通过，已有坐标" : "第三方模块连接通过，暂无坐标"
+            testResult = active ? "Third-party module connected; coordinates are saved" : "Third-party module connected; no coordinates are saved"
             testMessage = """
-            ======== 第三方代理连接检测 ========
-            模式: 测试模式
-            请求: wloc-settings/save?action=query
-            拦截响应: 有效 JSON
-            已保存坐标: \(active ? "是" : "否")
+            ======== Third-Party Proxy Connection Test ========
+            Mode: Third-Party Proxy Mode
+            Request: wloc-settings/save?action=query
+            Intercepted response: Valid JSON
+            Saved coordinates: \(active ? "Yes" : "No")
             """
         } catch {
-            testResult = "第三方模块连接失败"
+            testResult = "Third-party module connection failed"
             testMessage = """
-            ======== 第三方代理连接检测 ========
-            模式: 测试模式
-            请求: wloc-settings/save?action=query
-            结果: \(error.localizedDescription)
+            ======== Third-Party Proxy Connection Test ========
+            Mode: Third-Party Proxy Mode
+            Request: wloc-settings/save?action=query
+            Result: \(error.localizedDescription)
             """
         }
     }

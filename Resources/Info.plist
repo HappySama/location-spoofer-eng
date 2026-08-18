@@ -33,9 +33,9 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>用于显示和验证虚拟定位是否生效</string>
+	<string>Location access is used to display your current position and verify whether the selected virtual location is active.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>用于显示和验证虚拟定位是否生效</string>
+	<string>Location access is used to display your current position and verify whether the selected virtual location is active.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

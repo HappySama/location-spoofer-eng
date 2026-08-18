@@ -39,7 +39,7 @@ private enum RealtimeCoordinateSource: Equatable {
 
     var diagnosticName: String {
         switch self {
-        case .mapKitBluePoint: return "MapKit地图蓝点"
+        case .mapKitBluePoint: return "MapKit blue location dot"
         case .coreLocation: return "CLLocationManager"
         }
     }
@@ -139,11 +139,11 @@ struct MapHomeView: View {
             initialSource = .initial
             initialName = nil
         }
-        RuntimeLogger.info("APP", "地图", "初始化", details: [
+        RuntimeLogger.info("APP", "Map", "Initialized", details: [
             "zoom": String(initialZoom),
-            "有缓存": String(savedCoord != nil),
-            "初始来源": String(describing: initialSource),
-            "地图标准": CoordinateConverter.currentMapCoordinateSystem.rawValue
+            "Has cached location": String(savedCoord != nil),
+            "Initial source": String(describing: initialSource),
+            "Map coordinate system": CoordinateConverter.currentMapCoordinateSystem.rawValue
         ])
         _mapState = StateObject(wrappedValue: MapLocationState(
             initialCoordinate: initialCoord,
@@ -272,11 +272,11 @@ struct MapHomeView: View {
             SafariView(url: destination.url)
                 .ignoresSafeArea()
         }
-        .alert("社区分享成功配置？", isPresented: Binding(
+        .alert("Share a Working Configuration?", isPresented: Binding(
             get: { communityContributionClient != nil },
             set: { if !$0 { communityContributionClient = nil } }
         )) {
-            Button("去提交") {
+            Button("Submit") {
                 guard let client = communityContributionClient else { return }
                 UIPasteboard.general.string = GitHubSubmission.communityContributionTemplate(
                     for: client,
@@ -284,7 +284,7 @@ struct MapHomeView: View {
                 )
                 openCommunityContributionPage()
             }
-            Button("复制模板") {
+            Button("Copy Template") {
                 guard let client = communityContributionClient else { return }
                 UIPasteboard.general.string = GitHubSubmission.communityContributionTemplate(
                     for: client,
@@ -293,27 +293,27 @@ struct MapHomeView: View {
                 showCommunityTemplateCopied = true
             }
             if communityPromptPreferences.canSuppress() {
-                Button("不再提示", role: .cancel) {
+                Button("Don't Ask Again", role: .cancel) {
                     communityPromptPreferences.suppress()
                 }
             } else {
-                Button("取消", role: .cancel) {}
+                Button("Cancel", role: .cancel) {}
             }
         } message: {
             Text(
-                "你正在使用 \(communityContributionClient?.name ?? "第三方客户端")。点击“去提交”会先复制投稿模板，并在 App 内打开社区页面。采纳后将收录到 README，可选择是否匿名署名。"
+                "You're using \(communityContributionClient?.name ?? "a third-party client"). Tapping Submit copies a contribution template and opens the community page in the app. Accepted configurations are added to the README, and you may choose whether to be credited."
             )
         }
-        .alert("已复制投稿模板", isPresented: $showCommunityTemplateCopied) {
-            Button("知道了", role: .cancel) {}
+        .alert("Contribution Template Copied", isPresented: $showCommunityTemplateCopied) {
+            Button("Got It", role: .cancel) {}
         } message: {
-            Text("如果 GitHub 登录或浏览器跳转后模板没有自动填充，可以直接粘贴。")
+            Text("If the template is not filled automatically after GitHub sign-in or a browser redirect, paste it manually.")
         }
-        .alert("无法直接跳转", isPresented: Binding(
+        .alert("Unable to Open Page", isPresented: Binding(
             get: { !manualHint.isEmpty },
             set: { if !$0 { manualHint = "" } }
         )) {
-            Button("知道了", role: .cancel) {}
+            Button("Got It", role: .cancel) {}
         } message: { Text(manualHint) }
         .onAppear {
             startMapRuntimeOnce()
@@ -342,7 +342,7 @@ struct MapHomeView: View {
         .onChange(of: scenePhase) { phase in
             guard phase == .active else { return }
             Task { @MainActor in
-                await awaitCoordinatedMapCoordinateSystemRefresh(reason: "App回到前台")
+                await awaitCoordinatedMapCoordinateSystemRefresh(reason: "App returned to foreground")
             }
         }
         .onChange(of: proxy.isRunning) { running in
@@ -380,20 +380,20 @@ struct MapHomeView: View {
         }
         .sheet(isPresented: $showEnableTip) { enableTipSheet }
         .sheet(isPresented: $showDisableTip) { disableTipSheet }
-        .alert("定位失败", isPresented: $showLocationAlert) {
-            Button("打开设置") {
+        .alert("Location Unavailable", isPresented: $showLocationAlert) {
+            Button("Open Settings") {
                 openSettings(.locationServices)
             }
-            Button("知道了", role: .cancel) {}
+            Button("Got It", role: .cancel) {}
         } message: {
-            Text("无法获取当前定位，请检查定位服务是否已开启")
+            Text("The current location could not be determined. Make sure Location Services is enabled.")
         }
-        .alert("编辑收藏名称", isPresented: Binding(
+        .alert("Rename Favorite", isPresented: Binding(
             get: { editingFavorite != nil },
             set: { if !$0 { editingFavorite = nil } }
         )) {
-            TextField("名称", text: $editName)
-            Button("保存") {
+            TextField("Name", text: $editName)
+            Button("Save") {
                 if let f = editingFavorite {
                     let name = editName.trimmingCharacters(in: .whitespacesAndNewlines)
                     let finalName = name.isEmpty ? f.name : name
@@ -402,15 +402,15 @@ struct MapHomeView: View {
                 }
                 editingFavorite = nil
             }
-            Button("取消", role: .cancel) { editingFavorite = nil }
-        } message: { Text("修改收藏地点名称") }
+            Button("Cancel", role: .cancel) { editingFavorite = nil }
+        } message: { Text("Enter a new name for this favorite.") }
     }
 
     private var topControls: some View {
         HStack(spacing: 10) {
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("搜索地点或坐标", text: $searchText)
+                TextField("Search for a place or coordinates", text: $searchText)
                     .textInputAutocapitalization(.never).autocorrectionDisabled().submitLabel(.search).onSubmit(doSearch)
                 if isSearching { ProgressView().controlSize(.small) }
                 else if !searchText.isEmpty {
@@ -431,15 +431,15 @@ struct MapHomeView: View {
             .background(.regularMaterial, in: Capsule())
             .shadow(color: .black.opacity(0.13), radius: 9, y: 4)
             Menu {
-                Button { activeSheet = .logs } label: { Label("日志", systemImage: "list.bullet.rectangle") }
-                Button { activeSheet = .settings } label: { Label("设置", systemImage: "gearshape") }
+                Button { activeSheet = .logs } label: { Label("Logs", systemImage: "list.bullet.rectangle") }
+                Button { activeSheet = .settings } label: { Label("Settings", systemImage: "gearshape") }
             } label: {
                 Image(systemName: "ellipsis").font(.system(size: 20, weight: .bold))
                     .frame(width: 48, height: 48)
                     .background(.regularMaterial, in: Circle())
                     .shadow(color: .black.opacity(0.13), radius: 9, y: 4)
                     .contentShape(Circle())
-            }.accessibilityLabel("更多")
+            }.accessibilityLabel("More")
         }
     }
 
@@ -483,9 +483,9 @@ struct MapHomeView: View {
             // 当前选点
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(mapState.displayName ?? "当前选点").font(.subheadline.weight(.semibold)).lineLimit(1)
-                    coordinateRow(label: "GCJ-02(国内)", system: .gcj02)
-                    coordinateRow(label: "WGS-84(国际)", system: .wgs84)
+                    Text(mapState.displayName ?? "Selected Location").font(.subheadline.weight(.semibold)).lineLimit(1)
+                    coordinateRow(label: "GCJ-02 (China)", system: .gcj02)
+                    coordinateRow(label: "WGS-84 (Global)", system: .wgs84)
                 }
                 Spacer()
                 // 帮助说明按钮
@@ -496,7 +496,7 @@ struct MapHomeView: View {
                         activeTip = .deactivation
                     }
                 } label: {
-                    Text(spoofState == .active ? "无法生效？" : "无法取消？")
+                    Text(spoofState == .active ? "Not working?" : "Still spoofed?")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 8)
@@ -520,11 +520,11 @@ struct MapHomeView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(favorites.selectedFavoriteID != nil ? .orange : .gray)
                 .disabled(favoriteSaveTask != nil)
-                .accessibilityLabel(favorites.selectedFavoriteID != nil ? "已收藏，点击取消收藏" : "收藏当前选点")
+                .accessibilityLabel(favorites.selectedFavoriteID != nil ? "Favorited; tap to remove from favorites" : "Save the selected location as a favorite")
             }
             // 收藏
             if favorites.favorites.isEmpty {
-                Text("搜索或点击地图选点后，保存为收藏。").font(.footnote).foregroundStyle(.secondary)
+                Text("Search or tap the map to select a location, then save it as a favorite.").font(.footnote).foregroundStyle(.secondary)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) { ForEach(favorites.favorites) { f in favoriteChip(f) } }.padding(.vertical, 2)
@@ -537,7 +537,7 @@ struct MapHomeView: View {
                         if spoofState == .verifying {
                             ProgressView().tint(.white)
                         }
-                        Text(spoofState == .active && needsSwitchButton ? "关闭" : buttonTitle)
+                        Text(spoofState == .active && needsSwitchButton ? "Stop" : buttonTitle)
                             .font(.headline).lineLimit(1)
                     }
                     .frame(maxWidth: needsSwitchButton ? nil : .infinity)
@@ -553,7 +553,7 @@ struct MapHomeView: View {
                     Button {
                         beginLocationOperation()
                     } label: {
-                        Label("切换到此处", systemImage: "arrow.triangle.swap")
+                        Label("Switch to This Location", systemImage: "arrow.triangle.swap")
                             .font(.body.weight(.medium)).lineLimit(1)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12).padding(.horizontal, 16)
@@ -585,15 +585,15 @@ struct MapHomeView: View {
     private var buttonTitle: String {
         if runtimeMode.mode == .thirdParty {
             switch spoofState {
-            case .idle: return "同步到第三方代理"
-            case .verifying: return "检测并同步中…"
-            case .active: return "停止第三方虚拟定位"
+            case .idle: return "Send to Third-Party Proxy"
+            case .verifying: return "Testing and Sending…"
+            case .active: return "Stop Third-Party Location"
             }
         }
         switch spoofState {
-        case .idle: return "开始虚拟定位"
-        case .verifying: return "验证环境中…"
-        case .active: return "停止虚拟定位"
+        case .idle: return "Start Virtual Location"
+        case .verifying: return "Checking Environment…"
+        case .active: return "Stop Virtual Location"
         }
     }
 
@@ -640,11 +640,11 @@ struct MapHomeView: View {
                     spoofState = .active
                     activeSpoofLat = response.latitude
                     activeSpoofLon = response.longitude
-                    RuntimeLogger.info("APP", "定位", "第三方代理坐标同步成功", details: [
-                        "当前客户端": thirdPartyClient.selectedClient.name,
-                        "坐标标准": "WGS-84",
-                        "客户端模式": "测试模式",
-                        "选点期间发生变化": String(selectionRevision != mapState.selection.revision)
+                    RuntimeLogger.info("APP", "Location", "Coordinates synchronized to third-party proxy", details: [
+                        "Client": thirdPartyClient.selectedClient.name,
+                        "Coordinate system": "WGS-84",
+                        "Client mode": "Third-Party Proxy Mode",
+                        "Selection changed during operation": String(selectionRevision != mapState.selection.revision)
                     ])
                     presentSuccessfulOperationTip(.activation)
                     queueCommunityContributionPrompt(for: thirdPartyClient.selectedClient)
@@ -656,13 +656,13 @@ struct MapHomeView: View {
                     RuntimeLogger.error(
                         "APP",
                         "ThirdPartyProxy",
-                        "同步坐标到第三方客户端失败",
+                        "Failed to synchronize coordinates to the third-party client",
                         error: error,
                         details: [
-                            "当前客户端": thirdPartyClient.selectedClient.name,
-                            "请求动作": "WLOC save",
-                            "恢复状态": wasActive ? "保留原第三方坐标" : "保持未启用",
-                            "处理建议": ThirdPartyProxyError.recoverySuggestion(for: error)
+                            "Client": thirdPartyClient.selectedClient.name,
+                            "Request": "WLOC save",
+                            "Restored state": wasActive ? "Retained previous third-party coordinates" : "Remained disabled",
+                            "Suggested fix": ThirdPartyProxyError.recoverySuggestion(for: error)
                         ]
                     )
                     setup.requestThirdPartySetup(message: error.localizedDescription)
@@ -693,7 +693,7 @@ struct MapHomeView: View {
                     lastSpoofDiagnosisSystem = nil
                     hasLoggedSpoofDiagnosis = false
                 }
-                RuntimeLogger.info("APP", "定位", "验证结果", details: [
+                RuntimeLogger.info("APP", "Location", "Verification result", details: [
                     "success": "true",
                     "applied": String(applied),
                     "spoofState": String(describing: spoofState)
@@ -703,14 +703,14 @@ struct MapHomeView: View {
                 }
             } else {
                 spoofState = actions.virtualLocationEnabled ? .active : .idle
-                RuntimeLogger.warning("APP", "定位", "验证失败", details: [
+                RuntimeLogger.warning("APP", "Location", "Verification failed", details: [
                     "result": result.id,
                     "spoofState": String(describing: spoofState)
                 ])
                 if result != .verificationInProgress,
                    result != .verificationSuperseded {
-                    RuntimeLogger.warning("APP", "定位", "开启前检测失败，进入对应环境引导", details: [
-                        "结果": result.id
+                    RuntimeLogger.warning("APP", "Location", "Pre-activation check failed; opening the relevant setup guide", details: [
+                        "Result": result.id
                     ])
                     activeTip = nil
                     setup.applyVerificationResult(result)
@@ -738,13 +738,13 @@ struct MapHomeView: View {
                     RuntimeLogger.error(
                         "APP",
                         "ThirdPartyProxy",
-                        "清除第三方客户端坐标失败",
+                        "Failed to clear coordinates from the third-party client",
                         error: error,
                         details: [
-                            "当前客户端": thirdPartyClient.selectedClient.name,
-                            "请求动作": "WLOC clear",
-                            "恢复状态": "保留已启用状态",
-                            "处理建议": ThirdPartyProxyError.recoverySuggestion(for: error)
+                            "Client": thirdPartyClient.selectedClient.name,
+                            "Request": "WLOC clear",
+                            "Restored state": "Remained enabled",
+                            "Suggested fix": ThirdPartyProxyError.recoverySuggestion(for: error)
                         ]
                     )
                     setup.requestThirdPartySetup(message: error.localizedDescription)
@@ -765,11 +765,11 @@ struct MapHomeView: View {
 
     private func presentSuccessfulOperationTip(_ kind: VirtualLocationTipKind) {
         let count = tipPreferences.recordSuccessfulOperation(kind)
-        let operationName = kind == .activation ? "开启" : "关闭"
-        RuntimeLogger.info("APP", "提醒", "累计\(operationName)虚拟定位次数", details: [
-            "次数": String(count),
-            "运行模式": runtimeMode.mode.displayName,
-            "可显示不再提醒": String(tipPreferences.canSuppress(kind))
+        let operationName = kind == .activation ? "activation" : "deactivation"
+        RuntimeLogger.info("APP", "Tips", "Updated virtual-location \(operationName) count", details: [
+            "Count": String(count),
+            "Runtime mode": runtimeMode.mode.displayName,
+            "Can show Don't Remind Me Again": String(tipPreferences.canSuppress(kind))
         ])
         guard tipPreferences.shouldPresentAutomaticTip(kind) else { return }
         switch kind {
@@ -879,8 +879,8 @@ struct MapHomeView: View {
         .onTapGesture {
             UIPasteboard.general.string = text
             copiedCoordinateSystem = system
-            RuntimeLogger.info("APP", "地图", "已复制坐标", details: [
-                "坐标标准": system.diagnosticName
+            RuntimeLogger.info("APP", "Map", "Coordinates copied", details: [
+                "Coordinate system": system.diagnosticName
             ])
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 if copiedCoordinateSystem == system { copiedCoordinateSystem = nil }
@@ -888,7 +888,7 @@ struct MapHomeView: View {
         }
         .overlay(alignment: .topTrailing) {
             if copiedCoordinateSystem == system {
-                Text("已复制")
+                Text("Copied")
                     .font(.caption2.bold())
                     .foregroundStyle(.white)
                     .padding(.horizontal, 8)
@@ -918,11 +918,11 @@ struct MapHomeView: View {
         // its input boundary. Replaying the matching stored representation
         // avoids a second GCJ/WGS conversion and its accumulated offset.
         guard let stored = LastCoordinateStore.load() else {
-            RuntimeLogger.warning("APP", "坐标转换", "地图坐标标准切换时未找到当前选点缓存")
+            RuntimeLogger.warning("APP", "Coordinate Conversion", "Current selection cache was unavailable during a map coordinate-system change")
             return false
         }
         mapState.reprojectSelectionForMapCoordinateSystemChange(stored.coordinate(for: change.current))
-        RuntimeLogger.info("APP", "坐标转换", "地图坐标标准切换后已使用缓存坐标对回显当前选点", details: [
+        RuntimeLogger.info("APP", "Coordinate Conversion", "Redisplayed the current selection from cached coordinate pairs after a coordinate-system change", details: [
             "from": change.previous.rawValue,
             "to": change.current.rawValue
         ])
@@ -947,14 +947,14 @@ struct MapHomeView: View {
         if let stored = LastCoordinateStore.load() {
             scheduleGeocode(pair: stored.coordinatePair, revision: mapState.selection.revision)
         }
-        RuntimeLogger.warning("APP", "坐标转换", "地图坐标类型已变化", details: [
-            "触发原因": reason,
-            "旧类型": change.previous.diagnosticName,
-            "新类型": change.current.diagnosticName,
-            "图钉已按新类型重设": String(pinWasReprojected),
-            "蓝点缓存": "已清理",
-            "搜索结果": "已清理",
-            "异步地理编码": "已重置"
+        RuntimeLogger.warning("APP", "Coordinate Conversion", "Map coordinate system changed", details: [
+            "Trigger": reason,
+            "Previous system": change.previous.diagnosticName,
+            "New system": change.current.diagnosticName,
+            "Pin reprojected": String(pinWasReprojected),
+            "Blue-dot cache": "Cleared",
+            "Search results": "Cleared",
+            "Asynchronous geocoding": "Reset"
         ])
     }
 
@@ -998,7 +998,7 @@ struct MapHomeView: View {
             var attempt = 0
             repeat {
                 bluePointRefreshPending = false
-                _ = await refreshRuntimeMapCoordinateSystem(reason: "MapKit蓝点新样本")
+                _ = await refreshRuntimeMapCoordinateSystem(reason: "New MapKit blue-dot sample")
                 attempt += 1
             } while !Task.isCancelled
                 && refreshID == mapCoordinateSystemRefreshID
@@ -1034,17 +1034,17 @@ struct MapHomeView: View {
         let selectionRevision = mapState.selection.revision
         favoriteSaveTask = Task { @MainActor in
             defer { favoriteSaveTask = nil }
-            await awaitCoordinatedMapCoordinateSystemRefresh(reason: "保存收藏")
+            await awaitCoordinatedMapCoordinateSystemRefresh(reason: "Saving favorite")
             guard !Task.isCancelled else {
                 return
             }
             guard mapState.selection.revision == selectionRevision else {
-                RuntimeLogger.info("APP", "坐标转换", "取消保存收藏：检测期间当前选点已变化")
+                RuntimeLogger.info("APP", "Coordinate Conversion", "Cancelled favorite save because the selection changed during detection")
                 return
             }
-            RuntimeLogger.info("APP", "坐标转换", "保存当前选点为收藏", details: [
-                "当前地图标准": CoordinateConverter.currentMapCoordinateSystem.diagnosticName,
-                "持久化字段": "国际标准(WGS-84)+国内标准(GCJ-02)"
+            RuntimeLogger.info("APP", "Coordinate Conversion", "Saved current selection as a favorite", details: [
+                "Current map coordinate system": CoordinateConverter.currentMapCoordinateSystem.diagnosticName,
+                "Stored fields": "Global Standard (WGS-84) + China Standard (GCJ-02)"
             ])
             let favorite = favorites.save(
                 name: snapshot.name,
@@ -1080,26 +1080,26 @@ struct MapHomeView: View {
                     activeSpoofLat = latitude
                     activeSpoofLon = longitude
                     spoofState = .active
-                } else if response.error?.contains("无已保存") == true {
+                } else if response.error?.contains("无已保存") == true || response.error?.localizedCaseInsensitiveContains("no saved") == true {
                     activeSpoofLat = nil
                     activeSpoofLon = nil
                     spoofState = .idle
                 } else {
                     spoofState = .idle
-                    RuntimeLogger.warning("APP", "ThirdPartyProxy", "第三方代理查询返回失败", details: [
-                        "当前客户端": thirdPartyClient.selectedClient.name,
-                        "请求动作": "WLOC query",
-                        "错误": response.error ?? "未知错误"
+                    RuntimeLogger.warning("APP", "ThirdPartyProxy", "Third-party proxy query returned a failure", details: [
+                        "Client": thirdPartyClient.selectedClient.name,
+                        "Request": "WLOC query",
+                        "Error": response.error ?? "Unknown error"
                     ])
-                    setup.requestThirdPartySetup(message: response.error ?? "第三方代理查询失败")
+                    setup.requestThirdPartySetup(message: response.error ?? "Third-party proxy query failed")
                 }
             } catch {
                 spoofState = .idle
-                RuntimeLogger.warning("APP", "ThirdPartyProxy", "启动后第三方代理状态查询失败", details: [
-                    "当前客户端": thirdPartyClient.selectedClient.name,
-                    "请求动作": "WLOC query",
-                    "连接状态": String(describing: thirdPartyProxy.connectionState),
-                    "错误": error.localizedDescription
+                RuntimeLogger.warning("APP", "ThirdPartyProxy", "Third-party proxy status query failed after launch", details: [
+                    "Client": thirdPartyClient.selectedClient.name,
+                    "Request": "WLOC query",
+                    "Connection": String(describing: thirdPartyProxy.connectionState),
+                    "Error": error.localizedDescription
                 ])
                 setup.requestThirdPartySetup(message: error.localizedDescription)
             }
@@ -1108,13 +1108,13 @@ struct MapHomeView: View {
     }
 
     private func handleWiFiChange(reason: WiFiChangeReason) {
-        RuntimeLogger.info("APP", "WiFi", "检测到 Wi-Fi 网络变化", details: [
-            "原因": reason.rawValue,
-            "虚拟定位已开启": String(spoofState == .active)
+        RuntimeLogger.info("APP", "Wi-Fi", "Detected a Wi-Fi network change", details: [
+            "Reason": reason.rawValue,
+            "Virtual location enabled": String(spoofState == .active)
         ])
         guard spoofState == .active else { return }
         if wifiVerificationTask != nil {
-            RuntimeLogger.info("APP", "WiFi", "网络仍在变化，重新计算环境检测等待时间")
+            RuntimeLogger.info("APP", "Wi-Fi", "Network is still changing; restarting the environment-check delay")
         }
         wifiVerificationTask?.cancel()
         let verificationID = UUID()
@@ -1127,24 +1127,24 @@ struct MapHomeView: View {
                 }
             }
             let stabilizationNanoseconds: UInt64 = 3_000_000_000
-            RuntimeLogger.info("APP", "WiFi", "等待 Wi-Fi 连接稳定后检测", details: [
-                "等待秒数": "3",
-                "事件原因": reason.rawValue
+            RuntimeLogger.info("APP", "Wi-Fi", "Waiting for Wi-Fi to stabilize before checking the environment", details: [
+                "Wait seconds": "3",
+                "Event reason": reason.rawValue
             ])
             do {
                 try await Task.sleep(nanoseconds: stabilizationNanoseconds)
             } catch {
-                RuntimeLogger.debug("APP", "WiFi", "延时检测已被更新的网络事件取消")
+                RuntimeLogger.debug("APP", "Wi-Fi", "Delayed check cancelled by a newer network event")
                 return
             }
             guard !Task.isCancelled, spoofState == .active else { return }
             guard net.isSatisfied, net.isWiFiEnabled else {
-                RuntimeLogger.warning("APP", "WiFi", "稳定等待结束后仍未连接 Wi-Fi，提示检查代理", details: [
-                    "网络可用": String(net.isSatisfied),
-                    "Wi-Fi接口": String(net.isWiFiEnabled)
+                RuntimeLogger.warning("APP", "Wi-Fi", "Wi-Fi is still unavailable after the stabilization delay; prompting for proxy setup", details: [
+                    "Network available": String(net.isSatisfied),
+                    "Wi-Fi interface": String(net.isWiFiEnabled)
                 ])
                 activeTip = nil
-                setup.requestSetup(message: "当前未连接可用的 Wi-Fi，请连接 Wi-Fi 后配置 127.0.0.1:8888 手动代理。")
+                setup.requestSetup(message: "No usable Wi-Fi connection is available. Connect to Wi-Fi, then configure the manual proxy at 127.0.0.1:8888.")
                 return
             }
 
@@ -1153,15 +1153,15 @@ struct MapHomeView: View {
             // it finishes instead of silently dropping the Wi-Fi-change check.
             let maximumAttempts = 11
             for attempt in 1...maximumAttempts {
-                RuntimeLogger.info("APP", "WiFi", "开始后台环境检测", details: [
-                    "尝试": "\(attempt)/\(maximumAttempts)",
-                    "SSID可读取": String(net.currentSSID != nil)
+                RuntimeLogger.info("APP", "Wi-Fi", "Starting background environment check", details: [
+                    "Attempt": "\(attempt)/\(maximumAttempts)",
+                    "SSID readable": String(net.currentSSID != nil)
                 ])
                 let result = await setup.runVerificationTest()
                 guard !Task.isCancelled, spoofState == .active else { return }
                 if result == .verificationInProgress, attempt < maximumAttempts {
-                    RuntimeLogger.info("APP", "WiFi", "已有环境检测运行，1 秒后重试", details: [
-                        "尝试": "\(attempt)/\(maximumAttempts)"
+                    RuntimeLogger.info("APP", "Wi-Fi", "Another environment check is running; retrying in 1 second", details: [
+                        "Attempt": "\(attempt)/\(maximumAttempts)"
                     ])
                     do {
                         try await Task.sleep(nanoseconds: 1_000_000_000)
@@ -1171,8 +1171,8 @@ struct MapHomeView: View {
                     continue
                 }
 
-                RuntimeLogger.info("APP", "WiFi", "后台环境检测完成", details: [
-                    "结果": result.id,
+                RuntimeLogger.info("APP", "Wi-Fi", "Background environment check completed", details: [
+                    "Result": result.id,
                     "success": String(result.isSuccess)
                 ])
                 if !result.isSuccess,
@@ -1181,7 +1181,7 @@ struct MapHomeView: View {
                     activeTip = nil
                     setup.applyVerificationResult(result)
                 } else if result == .verificationInProgress {
-                    RuntimeLogger.warning("APP", "WiFi", "环境检测连续被占用，本次不重复弹窗")
+                    RuntimeLogger.warning("APP", "Wi-Fi", "Environment check remained busy; suppressing a duplicate alert")
                 }
                 return
             }
@@ -1192,7 +1192,7 @@ struct MapHomeView: View {
         guard realtimeButtonTask == nil else { return }
         realtimeButtonTask = Task { @MainActor in
             defer { realtimeButtonTask = nil }
-            await awaitCoordinatedMapCoordinateSystemRefresh(reason: "点击实时定位")
+            await awaitCoordinatedMapCoordinateSystemRefresh(reason: "Real-time location button tapped")
             guard !Task.isCancelled else {
                 return
             }
@@ -1202,28 +1202,28 @@ struct MapHomeView: View {
 
     private func performRealtimeLocationRequest() {
         let intent = mapState.beginRealtimeIntent()
-        RuntimeLogger.info("APP", "实时定位", "用户点击实时定位", details: [
+        RuntimeLogger.info("APP", "Real-Time Location", "User requested real-time location", details: [
             "intentID": String(intent.id),
-            "选点revision": String(intent.selectionRevision),
-            "当前地图标准": CoordinateConverter.currentMapCoordinateSystem.rawValue,
-            "蓝点缓存存在": String(mapState.realtimeLocation != nil),
-            "CLLocationManager请求中": String(realtime.isRequesting)
+            "Selection revision": String(intent.selectionRevision),
+            "Current map coordinate system": CoordinateConverter.currentMapCoordinateSystem.rawValue,
+            "Blue-dot cache available": String(mapState.realtimeLocation != nil),
+            "CLLocationManager request active": String(realtime.isRequesting)
         ])
         // 蓝点存在就直接用，不限时（MKMapView 的 userLocation 只在位置变化时才更新）
         if let loc = mapState.realtimeLocation {
-            RealtimeLocationTrace.log("实时定位按钮直接使用 MapKit 蓝点缓存", location: loc, details: [
+            RealtimeLocationTrace.log("Real-time location button used the MapKit blue-dot cache directly", location: loc, details: [
                 "intentID": String(intent.id),
-                "来源": "MapLocationState.realtimeLocation"
+                "Source": "MapLocationState.realtimeLocation"
             ])
             acceptRealtimeLocation(
                 loc.coordinate,
                 intent: intent,
                 source: .mapKitBluePoint,
-                sourceDescription: "MapKit蓝点缓存"
+                sourceDescription: "MapKit blue-dot cache"
             )
             return
         }
-        RuntimeLogger.info("APP", "实时定位", "MapKit 蓝点尚不可用，启动 CLLocationManager 兜底", details: [
+        RuntimeLogger.info("APP", "Real-Time Location", "MapKit blue dot unavailable; starting CLLocationManager fallback", details: [
             "intentID": String(intent.id)
         ])
         startRealtimeLocationRequest(
@@ -1241,8 +1241,8 @@ struct MapHomeView: View {
             return
         }
 
-        RealtimeLocationTrace.log("主页收到待处理请求所需的 MapKit 蓝点回调", location: location, details: [
-            "当前选点revision": String(mapState.selection.revision)
+        RealtimeLocationTrace.log("Home screen received the MapKit blue-dot callback needed by the pending request", location: location, details: [
+            "Current selection revision": String(mapState.selection.revision)
         ])
 
         // MKMapView's MKUserLocation is the visible blue point. When it arrives,
@@ -1250,15 +1250,15 @@ struct MapHomeView: View {
         // CLLocationManager fallback so the camera and dot cannot disagree.
         realtimeRequestContext = nil
         realtimeRequestTask?.cancel()
-        RuntimeLogger.info("APP", "实时定位", "MapKit 蓝点抢先完成请求，取消 CLLocationManager 兜底", details: [
+        RuntimeLogger.info("APP", "Real-Time Location", "MapKit blue dot completed the request first; cancelling CLLocationManager fallback", details: [
             "intentID": String(context.intent.id),
-            "原兜底来源": context.source
+            "Original fallback source": context.source
         ])
         acceptRealtimeLocation(
             location.coordinate,
             intent: context.intent,
             source: .mapKitBluePoint,
-            sourceDescription: "蓝点(途中)→\(context.source)"
+            sourceDescription: "Blue dot (in progress) → \(context.source)"
         )
     }
 
@@ -1282,13 +1282,13 @@ struct MapHomeView: View {
         guard shouldLog else { return }
         hasLoggedSpoofDiagnosis = true
         lastSpoofDiagnosisSystem = diagnosis.inferredSystem
-        RuntimeLogger.info("APP", "坐标转换", "虚拟定位开启后的 MapKit 蓝点标准判定", details: [
-            "当前地图标准": CoordinateConverter.currentMapCoordinateSystem.diagnosticName,
-            "WLOC目标标准": CoordinateConverter.MapCoordinateSystem.wgs84.diagnosticName,
-            "蓝点回调更接近": diagnosis.inferredName,
-            "蓝点距WGS目标米": String(format: "%.1f", diagnosis.distanceToWGS84),
-            "蓝点距GCJ目标米": String(format: "%.1f", diagnosis.distanceToGCJ02),
-            "日志策略": "每次开启首次或判定变化"
+        RuntimeLogger.info("APP", "Coordinate Conversion", "Determined MapKit blue-dot coordinate system after enabling virtual location", details: [
+            "Current map coordinate system": CoordinateConverter.currentMapCoordinateSystem.diagnosticName,
+            "WLOC target system": CoordinateConverter.MapCoordinateSystem.wgs84.diagnosticName,
+            "Blue-dot sample is closer to": diagnosis.inferredName,
+            "Distance to WGS target (meters)": String(format: "%.1f", diagnosis.distanceToWGS84),
+            "Distance to GCJ target (meters)": String(format: "%.1f", diagnosis.distanceToGCJ02),
+            "Logging policy": "First sample after each activation or when inference changes"
         ])
     }
 
@@ -1303,19 +1303,19 @@ struct MapHomeView: View {
             source: source,
             showFailureAlert: showFailureAlert
         )
-        RuntimeLogger.info("APP", "实时定位", "登记实时定位请求上下文", details: [
+        RuntimeLogger.info("APP", "Real-Time Location", "Registered real-time location request context", details: [
             "intentID": String(intent.id),
-            "选点revision": String(intent.selectionRevision),
-            "来源": source,
-            "失败时提示": String(showFailureAlert),
-            "任务已存在": String(realtimeRequestTask != nil),
-            "manager请求中": String(realtime.isRequesting)
+            "Selection revision": String(intent.selectionRevision),
+            "Source": source,
+            "Show failure alert": String(showFailureAlert),
+            "Task already exists": String(realtimeRequestTask != nil),
+            "Manager request active": String(realtime.isRequesting)
         ])
 
         // A button tap during the startup request retargets that same in-flight
         // Core Location request to the newer intent instead of being ignored.
         guard realtimeRequestTask == nil, !realtime.isRequesting else {
-            RuntimeLogger.info("APP", "实时定位", "复用进行中的 CLLocationManager 请求并更新意图上下文", details: [
+            RuntimeLogger.info("APP", "Real-Time Location", "Reusing active CLLocationManager request and updating its intent context", details: [
                 "intentID": String(intent.id)
             ])
             return
@@ -1326,26 +1326,26 @@ struct MapHomeView: View {
                 realtimeRequestContext = nil
             }
             guard let coordinate = await realtime.requestLocation() else {
-                RuntimeLogger.warning("APP", "实时定位", "CLLocationManager 兜底未返回坐标", details: [
-                    "授权状态rawValue": String(realtime.authorizationStatus.rawValue),
-                    "任务已取消": String(Task.isCancelled),
-                    "上下文存在": String(realtimeRequestContext != nil)
+                RuntimeLogger.warning("APP", "Real-Time Location", "CLLocationManager fallback did not return coordinates", details: [
+                    "Authorization raw value": String(realtime.authorizationStatus.rawValue),
+                    "Task cancelled": String(Task.isCancelled),
+                    "Context available": String(realtimeRequestContext != nil)
                 ])
                 guard let context = realtimeRequestContext,
                       context.showFailureAlert,
                       !Task.isCancelled,
                       mapState.selection.revision == context.intent.selectionRevision else { return }
-                RuntimeLogger.info("APP", "地图", "定位失败 status=\(realtime.authorizationStatus.rawValue)")
+                RuntimeLogger.info("APP", "Map", "Location request failed; status=\(realtime.authorizationStatus.rawValue)")
                 showLocationAlert = true
                 return
             }
-            RealtimeLocationTrace.coordinate("主页收到 CLLocationManager 兜底坐标", coordinate: coordinate, details: [
-                "任务已取消": String(Task.isCancelled)
+            RealtimeLocationTrace.coordinate("Home screen received CLLocationManager fallback coordinates", coordinate: coordinate, details: [
+                "Task cancelled": String(Task.isCancelled)
             ])
             guard !Task.isCancelled, let context = realtimeRequestContext else {
-                RuntimeLogger.info("APP", "实时定位", "丢弃 CLLocationManager 结果：任务已取消或蓝点已抢先完成", details: [
-                    "任务已取消": String(Task.isCancelled),
-                    "上下文存在": String(realtimeRequestContext != nil)
+                RuntimeLogger.info("APP", "Real-Time Location", "Discarded CLLocationManager result because the task was cancelled or the blue dot finished first", details: [
+                    "Task cancelled": String(Task.isCancelled),
+                    "Context available": String(realtimeRequestContext != nil)
                 ])
                 return
             }
@@ -1375,24 +1375,24 @@ struct MapHomeView: View {
             pair.coordinate(for: CoordinateConverter.currentMapCoordinateSystem),
             intent: intent
         )
-        RuntimeLogger.info("APP", "实时定位", "实时定位坐标完成标准判断并提交到地图", details: [
-            "来源": sourceDescription,
-            "来源类型": source.diagnosticName,
-            "输入坐标标准": sourceCoordinateSystem.diagnosticName,
+        RuntimeLogger.info("APP", "Real-Time Location", "Determined real-time coordinate system and submitted the location to the map", details: [
+            "Source": sourceDescription,
+            "Source type": source.diagnosticName,
+            "Input coordinate system": sourceCoordinateSystem.diagnosticName,
             "intentID": String(intent.id),
-            "intent选点revision": String(intent.selectionRevision),
-            "当前选点revision": String(mapState.selection.revision),
-            "App已确认地图标准": CoordinateConverter.currentMapCoordinateSystem.rawValue,
+            "Intent selection revision": String(intent.selectionRevision),
+            "Current selection revision": String(mapState.selection.revision),
+            "App-confirmed map coordinate system": CoordinateConverter.currentMapCoordinateSystem.rawValue,
             "accepted": String(accepted),
-            "显示坐标字段": CoordinateConverter.currentMapCoordinateSystem.rawValue,
-            "持久化字段": "WGS-84+GCJ-02"
+            "Displayed coordinate field": CoordinateConverter.currentMapCoordinateSystem.rawValue,
+            "Stored fields": "WGS-84 + GCJ-02"
         ])
-        RealtimeLocationTrace.coordinate("原始实时定位坐标", coordinate: coordinate, details: [
-            "来源": sourceDescription,
-            "输入坐标标准": sourceCoordinateSystem.diagnosticName
+        RealtimeLocationTrace.coordinate("Original real-time location coordinates", coordinate: coordinate, details: [
+            "Source": sourceDescription,
+            "Input coordinate system": sourceCoordinateSystem.diagnosticName
         ])
-        RealtimeLocationTrace.coordinate("地图实际显示坐标", coordinate: pair.coordinate(for: CoordinateConverter.currentMapCoordinateSystem), details: [
-            "地图标准": CoordinateConverter.currentMapCoordinateSystem.rawValue
+        RealtimeLocationTrace.coordinate("Coordinates actually displayed on the map", coordinate: pair.coordinate(for: CoordinateConverter.currentMapCoordinateSystem), details: [
+            "Map coordinate system": CoordinateConverter.currentMapCoordinateSystem.rawValue
         ])
         guard accepted else { return }
         // 用点击时的缩放级别居中，不改变缩放
@@ -1447,7 +1447,7 @@ struct MapHomeView: View {
                           let placemark = placemarks.first else { return }
 
                     if mkResponse?.mapItems.first != nil {
-                        RuntimeLogger.info("APP", "Geocode", "MKLocalSearch 返回地点结果")
+                        RuntimeLogger.info("APP", "Geocode", "MKLocalSearch returned a place result")
                     }
                     let mapItemName = mkResponse?.mapItems.first?.name?.trimmingCharacters(in: .whitespacesAndNewlines)
                     let mapItemPOI = mkResponse?.mapItems.first?.placemark.areasOfInterest?.first
@@ -1480,7 +1480,7 @@ struct MapHomeView: View {
                     let isNetworkError = nsError.domain == kCLErrorDomain
                         && nsError.code == CLError.network.rawValue
                     guard isNetworkError, attempt < retryDelays.count - 1 else { break }
-                    RuntimeLogger.info("APP", "Geocode", "反向地理编码网络失败，准备重试", details: [
+                    RuntimeLogger.info("APP", "Geocode", "Reverse-geocoding network request failed; preparing to retry", details: [
                         "attempt": String(attempt + 1),
                         "revision": String(revision)
                     ])
@@ -1490,7 +1490,7 @@ struct MapHomeView: View {
             guard !Task.isCancelled,
                   mapState.selection.revision == revision,
                   let lastError else { return }
-            RuntimeLogger.warning("APP", "Geocode", "反向地理编码失败", details: [
+            RuntimeLogger.warning("APP", "Geocode", "Reverse geocoding failed", details: [
                 "error": lastError.localizedDescription,
                 "revision": String(revision)
             ])
@@ -1517,19 +1517,19 @@ struct MapHomeView: View {
                 }
                 searchResults = (response?.mapItems ?? []).prefix(6).map { item in
                     let r = SearchLocationResult(
-                        name: item.name ?? "未命名",
+                        name: item.name ?? "Unnamed Location",
                         subtitle: [item.placemark.locality, item.placemark.subLocality, item.placemark.thoroughfare]
                             .compactMap { $0 }
                             .filter { !$0.isEmpty }
                             .joined(separator: " · "),
                         coordinate: item.placemark.coordinate
                     )
-                    RuntimeLogger.info("APP", "搜索", "获得搜索结果", details: [
-                        "名称": r.name
+                    RuntimeLogger.info("APP", "Search", "Received search result", details: [
+                        "Name": r.name
                     ])
                     return r
                 }
-                if searchResults.isEmpty { searchError = "没有找到相关地点" }
+                if searchResults.isEmpty { searchError = "No matching places were found." }
             }
         }
     }
@@ -1557,10 +1557,10 @@ struct MapHomeView: View {
         geocodeDebounceTask?.cancel()
         reverseGeocodeTask?.cancel()
         favorites.select(favorite.id)
-        RuntimeLogger.info("APP", "坐标转换", "点击收藏点并回显到地图", details: [
-            "当前地图标准": CoordinateConverter.currentMapCoordinateSystem.diagnosticName,
-            "地图取值字段": CoordinateConverter.currentMapCoordinateSystem == .gcj02 ? "coordinatePair.gcj02" : "coordinatePair.wgs84",
-            "保存数据包含": "国际标准(WGS-84)+国内标准(GCJ-02)"
+        RuntimeLogger.info("APP", "Coordinate Conversion", "Selected a favorite and displayed it on the map", details: [
+            "Current map coordinate system": CoordinateConverter.currentMapCoordinateSystem.diagnosticName,
+            "Map source field": CoordinateConverter.currentMapCoordinateSystem == .gcj02 ? "coordinatePair.gcj02" : "coordinatePair.wgs84",
+            "Stored data": "Global Standard (WGS-84) + China Standard (GCJ-02)"
         ])
         mapState.selectFavorite(
             favorite.coordinatePair.coordinate(for: CoordinateConverter.currentMapCoordinateSystem),
@@ -1580,7 +1580,7 @@ struct MapHomeView: View {
                     ActivationTipContent(runtimeMode: runtimeMode.mode, dismiss: {})
                 }.padding(16)
             }
-            .navigationTitle("虚拟定位已开启").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Virtual Location Enabled").navigationBarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) {
                 HStack(spacing: 12) {
                     if tipPreferences.canSuppress(.activation) {
@@ -1588,7 +1588,7 @@ struct MapHomeView: View {
                             tipPreferences.suppress(.activation)
                             showEnableTip = false
                         } label: {
-                            Label("不再提醒", systemImage: "bell.slash.fill")
+                            Label("Don't Remind Me Again", systemImage: "bell.slash.fill")
                                 .font(.body.weight(.semibold))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
@@ -1597,7 +1597,7 @@ struct MapHomeView: View {
                         .tint(.orange)
 
                         Button { showEnableTip = false } label: {
-                            Text("知道了")
+                            Text("Got It")
                                 .font(.body.weight(.medium))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
@@ -1606,7 +1606,7 @@ struct MapHomeView: View {
                         .tint(.blue)
                     } else {
                         Button { showEnableTip = false } label: {
-                            Text("知道了")
+                            Text("Got It")
                                 .font(.body.weight(.medium))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
@@ -1629,7 +1629,7 @@ struct MapHomeView: View {
                     }
                 }.padding(16)
             }
-            .navigationTitle("虚拟定位已关闭").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("Virtual Location Disabled").navigationBarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) {
                 HStack(spacing: 12) {
                     if tipPreferences.canSuppress(.deactivation) {
@@ -1637,7 +1637,7 @@ struct MapHomeView: View {
                             tipPreferences.suppress(.deactivation)
                             showDisableTip = false
                         } label: {
-                            Label("不再提醒", systemImage: "bell.slash.fill")
+                            Label("Don't Remind Me Again", systemImage: "bell.slash.fill")
                                 .font(.body.weight(.semibold))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
@@ -1646,7 +1646,7 @@ struct MapHomeView: View {
                         .tint(.orange)
 
                         Button { showDisableTip = false } label: {
-                            Text("知道了")
+                            Text("Got It")
                                 .font(.body.weight(.medium))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
@@ -1655,7 +1655,7 @@ struct MapHomeView: View {
                         .tint(.blue)
                     } else {
                         Button { showDisableTip = false } label: {
-                            Text("知道了")
+                            Text("Got It")
                                 .font(.body.weight(.medium))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)

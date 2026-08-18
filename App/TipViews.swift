@@ -1,9 +1,9 @@
 import SwiftUI
 
 enum TipKind: String, Identifiable {
-    case activation = "生效说明"
-    case deactivation = "失效说明"
-    case removeProxy = "关闭 WiFi 代理"
+    case activation = "Activation Guide"
+    case deactivation = "Restoration Guide"
+    case removeProxy = "Disable Wi-Fi Proxy"
     var id: String { rawValue }
 }
 
@@ -26,7 +26,7 @@ struct TipSheetView: View {
             .navigationTitle(kind.rawValue).navigationBarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) {
                 Button { dismiss() } label: {
-                    Text("知道了").font(.body.weight(.medium)).frame(maxWidth: .infinity).padding(.vertical, 12)
+                    Text("Got It").font(.body.weight(.medium)).frame(maxWidth: .infinity).padding(.vertical, 12)
                 }.buttonStyle(.borderedProminent).tint(.blue).padding(.horizontal, 16).padding(.bottom, 8)
             }
         }
@@ -48,29 +48,29 @@ private func openSettings(_ destination: SystemSettingsDestination) {
     }
 }
 
-// MARK: - 生效说明
+// MARK: - Activation guide
 
 struct ActivationTipContent: View {
     var runtimeMode: ProxyRuntimeMode = .localWiFi
     let dismiss: () -> Void
 
     var body: some View {
-        GroupBox(label: Label("让虚拟定位生效", systemImage: "checklist")) {
+        GroupBox(label: Label("Apply the Virtual Location", systemImage: "checklist")) {
             VStack(alignment: .leading, spacing: 10) {
                 if runtimeMode == .thirdParty {
-                    step(0, "确认第三方代理已开启", "保持已导入的 WLOC 模块、HTTPS 解密和第三方代理/VPN 连接开启。")
+                    step(0, "Confirm the Proxy Is Running", "Keep the imported WLOC module, HTTPS decryption, and the third-party proxy/VPN connection enabled.")
                 }
-                step(1, "开启飞行模式", "从控制中心打开飞行模式（点飞机图标），Wi‑Fi 会自动断开。这是为了清除 iOS 的定位缓存。等待 2 秒。")
-                step(2, "关闭 Wi‑Fi", "从控制中心再点一下 Wi‑Fi 图标，确认 Wi‑Fi 已关闭。等待 2 秒。")
-                systemStep(3, "关闭系统定位服务", "打开系统「设置 → 隐私与安全性 → 定位服务」，关闭顶部的总开关。等待 2 秒。")
-                step(4, "打开 Wi‑Fi，启动虚拟定位", runtimeMode == .thirdParty ? "从控制中心打开 Wi‑Fi（飞行模式保持开启），确认第三方代理已连接。坐标已经同步到第三方代理。等待 2 秒。" : "从控制中心打开 Wi‑Fi（飞行模式保持开启），进入 App 点底部「开始虚拟定位」。等待 2 秒。")
-                step(5, "关闭飞行模式", "从控制中心关闭飞行模式。等待 2 秒。")
-                systemStep(6, "重新开启定位服务", "再次进入「设置 → 隐私与安全性 → 定位服务」，打开总开关。完成后打开地图验证定位是否已变化。")
+                step(1, "Turn On Airplane Mode", "Open Control Center and tap the airplane icon. Wi-Fi should disconnect automatically. This begins clearing iOS's cached location. Wait 2 seconds.")
+                step(2, "Make Sure Wi-Fi Is Off", "In Control Center, confirm that Wi-Fi is disconnected. Wait 2 seconds.")
+                systemStep(3, "Turn Off Location Services", "Open Settings → Privacy & Security → Location Services and turn off the main switch. Wait 2 seconds.")
+                step(4, "Reconnect Wi-Fi", runtimeMode == .thirdParty ? "Keep Airplane Mode on, turn Wi-Fi back on, and confirm the third-party proxy reconnects. The coordinates are already synchronized. Wait 2 seconds." : "Keep Airplane Mode on and turn Wi-Fi back on. Return to Location Spoofer and confirm the virtual location is still enabled. Wait 2 seconds.")
+                step(5, "Turn Off Airplane Mode", "Turn off Airplane Mode from Control Center. Wait 2 seconds.")
+                systemStep(6, "Turn Location Services Back On", "Return to Settings → Privacy & Security → Location Services and enable the main switch. Then open Maps to verify the new location.")
             }.padding(.vertical, 4)
         }
 
-        GroupBox(label: Label("还是无法生效？", systemImage: "exclamationmark.triangle")) {
-            Text("操作到第 3 步时关机重启，开机后从第 4 步继续。这样能彻底清除系统缓存的定位数据。")
+        GroupBox(label: Label("Still Showing the Old Location?", systemImage: "exclamationmark.triangle")) {
+            Text("Repeat the procedure through step 3, restart the iPhone while Location Services is off, and continue from step 4 after it starts. This performs a more thorough cache reset.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.leading)
@@ -101,37 +101,37 @@ struct ActivationTipContent: View {
                 Text(title).font(.caption.weight(.semibold))
                 Text(detail).font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Button { openSettings(.locationServices) } label: {
-                    Label("去设置", systemImage: "arrow.up.right.square").font(.caption)
+                    Label("Open Settings", systemImage: "arrow.up.right.square").font(.caption)
                 }.buttonStyle(.bordered).tint(.blue)
             }
         }
     }
 }
 
-// MARK: - 失效说明
+// MARK: - Restoration guide
 
 struct DeactivationTipContent: View {
     var runtimeMode: ProxyRuntimeMode = .localWiFi
     let dismiss: () -> Void
 
     var body: some View {
-        GroupBox(label: Label("取消虚拟定位", systemImage: "arrow.uturn.backward.circle")) {
+        GroupBox(label: Label("Restore the Real Location", systemImage: "arrow.uturn.backward.circle")) {
             VStack(alignment: .leading, spacing: 10) {
-                step(1, "开启飞行模式", "从控制中心打开飞行模式，Wi‑Fi 会自动断开。等待 2 秒。")
-                step(2, "关闭 Wi‑Fi", "从控制中心确认 Wi‑Fi 已关闭。等待 2 秒。")
-                systemStep(3, "关闭系统定位服务", "打开「设置 → 隐私与安全性 → 定位服务」，关闭总开关。等待 2 秒。")
+                step(1, "Turn On Airplane Mode", "Open Control Center and turn on Airplane Mode. Wi-Fi should disconnect automatically. Wait 2 seconds.")
+                step(2, "Make Sure Wi-Fi Is Off", "Confirm in Control Center that Wi-Fi is disconnected. Wait 2 seconds.")
+                systemStep(3, "Turn Off Location Services", "Open Settings → Privacy & Security → Location Services and turn off the main switch. Wait 2 seconds.")
                 if runtimeMode == .thirdParty {
-                    step(4, "确认坐标已清除", "App 已通知第三方代理清除虚拟坐标。保持网络可用并等待 2 秒，让系统重新获取真实定位。")
+                    step(4, "Confirm the Coordinates Were Cleared", "Location Spoofer has asked the third-party proxy to remove the virtual coordinates. Keep the network available and wait 2 seconds.")
                 } else {
-                    systemStep(4, "打开 Wi‑Fi，移除代理", "从控制中心打开 Wi‑Fi。然后进入「设置 → 无线局域网 → 点 WiFi 右侧 (i) → HTTP 代理」，选择「关闭」后存储。等待 2 秒。")
+                    systemStep(4, "Reconnect Wi-Fi and Remove the Proxy", "Turn Wi-Fi back on. Then open Settings → Wi-Fi → tap the (i) beside the connected network → Configure Proxy, choose Off, and save. Wait 2 seconds.")
                 }
-                step(5, "关闭飞行模式", "从控制中心关闭飞行模式。等待 2 秒。")
-                systemStep(6, "重新开启定位服务", "再次进入「设置 → 隐私与安全性 → 定位服务」打开总开关。打开地图验证定位是否恢复。")
+                step(5, "Turn Off Airplane Mode", "Turn off Airplane Mode from Control Center. Wait 2 seconds.")
+                systemStep(6, "Turn Location Services Back On", "Return to Settings → Privacy & Security → Location Services and enable the main switch. Open Maps and verify that your real location has returned.")
             }.padding(.vertical, 4)
         }
 
-        GroupBox(label: Label("还是无法取消？", systemImage: "exclamationmark.triangle")) {
-            Text("操作到第 3 步时关机重启，开机后从第 4 步继续。")
+        GroupBox(label: Label("Still Showing the Virtual Location?", systemImage: "exclamationmark.triangle")) {
+            Text("Repeat the procedure through step 3, restart the iPhone while Location Services is off, and continue from step 4 after it starts.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.leading)
@@ -162,25 +162,25 @@ struct DeactivationTipContent: View {
                 Text(title).font(.caption.weight(.semibold))
                 Text(detail).font(.caption2).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Button { openSettings(.locationServices) } label: {
-                    Label("去设置", systemImage: "arrow.up.right.square").font(.caption)
+                    Label("Open Settings", systemImage: "arrow.up.right.square").font(.caption)
                 }.buttonStyle(.bordered).tint(.blue)
             }
         }
     }
 }
 
-// MARK: - 移除 WiFi 代理
+// MARK: - Remove Wi-Fi proxy
 
 struct RemoveProxyTipContent: View {
     let dismiss: () -> Void
 
     var body: some View {
-        GroupBox(label: Label("移除代理配置", systemImage: "wifi.slash")) {
+        GroupBox(label: Label("Remove the Wi-Fi Proxy", systemImage: "wifi.slash")) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("停止虚拟定位后，需要手动移除 WiFi 代理配置，否则可能无法上网。\n\n1. 打开「设置 → 无线局域网」\n2. 点击当前 WiFi 右侧 (i) 图标\n3. 找到「HTTP 代理」\n4. 选择「关闭」\n5. 点右上角「存储」")
+                Text("After stopping the virtual location, remove the manual Wi-Fi proxy or your internet connection may stop working.\n\n1. Open Settings → Wi-Fi\n2. Tap the (i) beside the connected network\n3. Open Configure Proxy\n4. Select Off\n5. Tap Save")
                     .font(.caption).foregroundStyle(.primary)
                 Button { openSettings(.wifi) } label: {
-                    Label("去设置", systemImage: "arrow.up.right.square").font(.caption)
+                    Label("Open Settings", systemImage: "arrow.up.right.square").font(.caption)
                 }.buttonStyle(.bordered).tint(.blue)
             }.padding(.vertical, 4)
         }

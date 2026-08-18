@@ -206,7 +206,7 @@ func serveLocalRequests(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request
 <title>Preparing Certificate</title>
 </head>
 <body>
-<p>正在准备 CA 证书，如未弹出请点击 <a href="/cert">这里</a>。</p>
+<p>Preparing the CA certificate. If the download does not appear, click <a href="/cert">here</a>.</p>
 </body>
 </html>`
 	resp := goproxy.NewResponse(req, "text/html; charset=utf-8", http.StatusOK, html)

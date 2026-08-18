@@ -13,11 +13,11 @@ final class ProxyManager: ObservableObject {
     private var proxyHandle: UInt = 0
     private var coordinateRevision: UInt64 = 0
 
-    private init() { RuntimeLogger.info("APP", "Proxy", "初始化") }
+    private init() { RuntimeLogger.info("APP", "Proxy", "Initialized") }
 
     func start() async throws {
         guard !isRunning else { return }
-        RuntimeLogger.info("APP", "Proxy.start", "启动代理 127.0.0.1:8888")
+        RuntimeLogger.info("APP", "Proxy.start", "Starting proxy at 127.0.0.1:8888")
         do {
             let authority = try certificateStore.ensure()
             let settings = WlocSettingsStore.load()
@@ -27,7 +27,7 @@ final class ProxyManager: ObservableObject {
             let accuracy = CInt(settings?.accuracy ?? 25)
             let motionEnabled = MotionSimulationStore.shared.isEnabled ? CInt(1) : CInt(0)
             if enabled != 0 {
-                RuntimeLogger.info("APP", "坐标转换", "启动代理: 恢复上次 WGS-84 定位")
+                RuntimeLogger.info("APP", "Coordinate Conversion", "Proxy startup: restoring the last WGS-84 location")
             }
             let result: UInt = authority.certPEM.withCString { cp in
                 authority.keyPEM.withCString { kp in
@@ -48,10 +48,10 @@ final class ProxyManager: ObservableObject {
             error = nil
             BackgroundKeepAlive.shared.start()
             CoreBridge.flushLogs(category: "Proxy")
-            RuntimeLogger.info("APP", "Proxy.start", "启动成功")
+            RuntimeLogger.info("APP", "Proxy.start", "Started successfully")
         } catch {
             CoreBridge.flushLogs(category: "Proxy")
-            RuntimeLogger.error("APP", "Proxy.start", "启动失败", error: error)
+            RuntimeLogger.error("APP", "Proxy.start", "Failed to start", error: error)
             throw error
         }
     }
@@ -74,7 +74,7 @@ final class ProxyManager: ObservableObject {
             CInt(accuracy),
             MotionSimulationStore.shared.isEnabled ? 1 : 0
         )
-        RuntimeLogger.info("APP", "Proxy.coords", "写入坐标", details: [
+        RuntimeLogger.info("APP", "Proxy.coords", "Writing coordinates", details: [
             "revision": String(coordinateRevision),
             "enabled": String(enabled),
             "accuracy": String(accuracy)
@@ -102,7 +102,7 @@ final class ProxyManager: ObservableObject {
         expectedRevision: UInt64
     ) -> UInt64? {
         guard coordinateRevision == expectedRevision else {
-            RuntimeLogger.info("APP", "Proxy.coords", "跳过过期坐标写入", details: [
+            RuntimeLogger.info("APP", "Proxy.coords", "Skipped an outdated coordinate write", details: [
                 "expectedRevision": String(expectedRevision),
                 "currentRevision": String(coordinateRevision)
             ])
@@ -114,7 +114,7 @@ final class ProxyManager: ObservableObject {
     @discardableResult
     func restoreCoords(_ snapshot: ProxyCoordinateSnapshot, ifUnchangedSince revision: UInt64) -> Bool {
         guard coordinateRevision == revision else {
-            RuntimeLogger.info("APP", "Proxy.coords", "跳过旧验证坐标恢复", details: [
+            RuntimeLogger.info("APP", "Proxy.coords", "Skipped restoration of old verification coordinates", details: [
                 "verificationRevision": String(revision),
                 "currentRevision": String(coordinateRevision)
             ])
@@ -144,7 +144,7 @@ final class ProxyManager: ObservableObject {
             CInt(settings?.accuracy ?? 25),
             enabled ? 1 : 0
         )
-        RuntimeLogger.info("APP", "Proxy.motion", "运动状态模拟设置已更新", details: [
+        RuntimeLogger.info("APP", "Proxy.motion", "Motion-state simulation setting updated", details: [
             "enabled": String(enabled)
         ])
         CoreBridge.flushLogs(category: "Proxy")
@@ -154,14 +154,14 @@ final class ProxyManager: ObservableObject {
         do {
             if !isRunning { try await start() }
             guard let url = URL(string: "http://127.0.0.1:8888/cert") else {
-                error = "证书下载地址无效"
+                error = "The certificate download URL is invalid"
                 return nil
             }
             error = nil
             return url
         } catch {
-            self.error = "启动代理失败: \(error.localizedDescription)"
-            RuntimeLogger.error("APP", "Certificate", "准备证书下载失败", error: error)
+            self.error = "Failed to start the proxy: \(error.localizedDescription)"
+            RuntimeLogger.error("APP", "Certificate", "Failed to prepare the certificate download", error: error)
             return nil
         }
     }
@@ -182,5 +182,5 @@ struct ProxyCoordinateSnapshot: Equatable {
 
 enum ProxyError: LocalizedError {
     case startFailed
-    var errorDescription: String? { "Go proxy 启动失败" }
+    var errorDescription: String? { "The Go proxy failed to start" }
 }

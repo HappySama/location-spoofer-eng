@@ -356,7 +356,7 @@ enum LastCoordinateStore {
             defaults.set(try JSONEncoder().encode(value), forKey: positionKey)
             ViewportStore.save(value.zoomMeters, defaults: defaults)
         } catch {
-            RuntimeLogger.error("APP", "地图", "保存当前图钉失败", error: error)
+            RuntimeLogger.error("APP", "Map", "Failed to save the current pin", error: error)
         }
     }
 
@@ -406,7 +406,7 @@ enum ViewportStore {
     static func save(_ meters: CLLocationDistance, defaults: UserDefaults = AppGroup.defaults) {
         let value = max(50, meters)
         defaults.set(value, forKey: key)
-        RuntimeLogger.info("APP", "缩放", "存储缩放", details: ["zoom": String(value)])
+        RuntimeLogger.info("APP", "Zoom", "Saved zoom level", details: ["zoom": String(value)])
     }
 
     static func load(defaults: UserDefaults = AppGroup.defaults) -> CLLocationDistance? {
@@ -440,6 +440,6 @@ enum CoordinateStorageMigration {
         )
         try favorites.migrateLegacyCoordinates()
         defaults.set(currentVersion, forKey: versionKey)
-        RuntimeLogger.info("APP", "坐标转换", "旧坐标数据迁移完成")
+        RuntimeLogger.info("APP", "Coordinate Conversion", "Legacy coordinate data migration completed")
     }
 }

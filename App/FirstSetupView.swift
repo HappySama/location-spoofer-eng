@@ -25,11 +25,11 @@ enum SetupStep: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .mode: return "选择模式"
-        case .proxy: return "配置 Wi-Fi 代理"
-        case .cert: return "初始化 CA 证书"
-        case .thirdPartyClient: return "选择客户端"
-        case .thirdPartyImport: return "导入并检测"
+        case .mode: return "Choose Mode"
+        case .proxy: return "Wi-Fi Proxy"
+        case .cert: return "CA Certificate"
+        case .thirdPartyClient: return "Choose Client"
+        case .thirdPartyImport: return "Import and Test"
         }
     }
 }
@@ -80,7 +80,7 @@ struct FirstSetupView: View {
 
     private var certificateStepsComplete: Bool { downloadedDone && installedDone && trustedDone }
     private var diagnosticFavorite: FavoriteLocation {
-        FavoriteLocation(name: "诊断位置", latitude: 22.544577, longitude: 113.94114, accuracy: 25)
+        FavoriteLocation(name: "Diagnostic Location", latitude: 22.544577, longitude: 113.94114, accuracy: 25)
     }
 
     var body: some View {
@@ -120,7 +120,7 @@ struct FirstSetupView: View {
                         Button {
                             returnToPreviousStep()
                         } label: {
-                            Label("上一步", systemImage: "chevron.left")
+                            Label("Back", systemImage: "chevron.left")
                         }
                         .buttonStyle(.bordered)
                         .disabled(isVerifying || thirdPartyProxy.isRequesting)
@@ -131,7 +131,7 @@ struct FirstSetupView: View {
                     .padding(.vertical, 12)
                 }
             }
-            .navigationTitle("开始使用")
+            .navigationTitle("Get Started")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showDiagnostics) {
                 NavigationView {
@@ -155,7 +155,7 @@ struct FirstSetupView: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("完成") { screenshotPreview = nil }
+                            Button("Done") { screenshotPreview = nil }
                         }
                     }
                 }
@@ -164,18 +164,18 @@ struct FirstSetupView: View {
                 SafariView(url: destination.url)
                     .ignoresSafeArea()
             }
-            .alert("无法直接跳转", isPresented: Binding(
+            .alert("Unable to Open Settings", isPresented: Binding(
                 get: { !manualHint.isEmpty },
                 set: { if !$0 { manualHint = "" } }
             )) {
-                Button("知道了", role: .cancel) {}
+                Button("Got It", role: .cancel) {}
             } message: { Text(manualHint) }
-            .alert("操作失败", isPresented: Binding(
+            .alert("Action Failed", isPresented: Binding(
                 get: { !setupActionError.isEmpty },
                 set: { if !$0 { setupActionError = "" } }
             )) {
-                Button("查看诊断日志") { showDiagnostics = true }
-                Button("知道了", role: .cancel) {}
+                Button("View Diagnostic Logs") { showDiagnostics = true }
+                Button("Got It", role: .cancel) {}
             } message: {
                 Text(setupActionError)
             }
@@ -222,29 +222,29 @@ struct FirstSetupView: View {
         }
         guard !setup.message.isEmpty else { return nil }
         return """
-        ======== 第三方代理运行检测 ========
-        当前客户端：\(thirdPartyClient.selectedClient.name)
-        触发来源：地图或设置中的第三方代理操作
-        请求动作：WLOC 配置接口
-        检测结果：失败
-        错误详情：\(setup.message)
-        处理建议：确认模块已启用，并检查 MITM、证书和代理/VPN 连接。
+        ======== Third-Party Proxy Runtime Test ========
+        Current client: \(thirdPartyClient.selectedClient.name)
+        Triggered by: A third-party proxy action from the map or Settings
+        Request: WLOC configuration endpoint
+        Result: Failed
+        Details: \(setup.message)
+        Suggested fix: Confirm the module is enabled, then check MITM, the certificate, and the proxy/VPN connection.
         """
     }
 
     private var modeStep: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("选择运行模式")
+            Text("Choose a Runtime Mode")
                 .font(.title2.bold())
-            Text("后续可在“设置 → 运行模式”中切换。两种模式不要同时拦截 WLOC 请求。")
+            Text("You can change this later under Settings → Runtime Mode. Do not let both modes intercept WLOC requests at the same time.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
             modeCard(
-                title: "APP模式",
+                title: "App Mode",
                 icon: "iphone.and.arrow.forward",
-                badges: ["仅 Wi-Fi", "无外部依赖"],
-                description: "App 在设备本地启动代理，通过当前 Wi-Fi 的手动 HTTP 代理改写定位响应。免费自签应用无法使用系统 VPN 的 Network Extension 能力，因此 APP模式不支持蜂窝网络，需要配置 Wi-Fi 代理并安装 App 生成的 CA。",
+                badges: ["Wi-Fi Only", "No External Client"],
+                description: "Location Spoofer runs a local proxy on this iPhone and uses the connected Wi-Fi network's manual HTTP proxy setting to modify location responses. A self-signed app cannot use the Network Extension required for a system VPN, so App Mode does not work over cellular data. It requires the manual Wi-Fi proxy and the CA certificate generated by this app.",
                 tint: .blue
             ) {
                 selectMode(.localWiFi)
@@ -252,10 +252,10 @@ struct FirstSetupView: View {
             .disabled(isPreparingMode)
 
             modeCard(
-                title: "第三方代理模式",
+                title: "Third-Party Proxy Mode",
                 icon: "network.badge.shield.half.filled",
-                badges: ["Wi-Fi + 4G/5G", "测试模式"],
-                description: "App 负责选点，并通过 WLOC 配置接口查询和同步坐标；第三方代理客户端负责网络代理、模块拦截、MITM 和持久化。证书、VPN 与代理连接均由第三方客户端处理。",
+                badges: ["Wi-Fi + 4G/5G", "Experimental"],
+                description: "Location Spoofer selects the location and uses the WLOC configuration endpoint to read and synchronize coordinates. A third-party proxy client handles traffic routing, module interception, MITM, and persistent storage, including its own certificate and VPN connection.",
                 tint: .orange
             ) {
                 selectMode(.thirdParty)
@@ -265,7 +265,7 @@ struct FirstSetupView: View {
             if isPreparingMode {
                 HStack(spacing: 8) {
                     ProgressView()
-                    Text("正在准备 APP模式本地服务…")
+                    Text("Preparing App Mode's local services…")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -317,24 +317,24 @@ struct FirstSetupView: View {
                     .foregroundStyle(.orange)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            GroupBox(label: Label("先配置 Wi-Fi 系统代理", systemImage: "wifi")) {
-                Text("在当前 Wi-Fi 的详情页，将「HTTP 代理」设为「手动」：服务器填 127.0.0.1，端口填 8888。配置后点击下方「完成」。检测会自动判断是 Wi-Fi 代理还是证书信任有问题。")
+            GroupBox(label: Label("Configure the Wi-Fi Proxy First", systemImage: "wifi")) {
+                Text("Open the details for your connected Wi-Fi network. Under Configure Proxy, choose Manual, enter 127.0.0.1 as the server and 8888 as the port, then return here and tap Continue. The connection test will distinguish between an incorrect proxy setting and an untrusted certificate.")
                     .font(.caption).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.top, 4)
             }
             setupScreenshot(
                 assetName: "AppModeWiFiProxy",
-                title: "Wi-Fi 代理设置",
-                caption: "1 选择手动，2 填写服务器 127.0.0.1，3 填写端口 8888。"
+                title: "Wi-Fi Proxy Settings",
+                caption: "1 Choose Manual. 2 Enter 127.0.0.1 as the server. 3 Enter 8888 as the port."
             )
             HStack(spacing: 12) {
                 Button { UIPasteboard.general.string = "127.0.0.1:8888" } label: {
-                    Label("复制地址", systemImage: "doc.on.doc").frame(maxWidth: .infinity)
+                    Label("Copy Address", systemImage: "doc.on.doc").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 Button { openSettings(.wifi) } label: {
-                    Label("打开 Wi-Fi 设置", systemImage: "gearshape").frame(maxWidth: .infinity)
+                    Label("Open Wi-Fi Settings", systemImage: "gearshape").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
             }
@@ -344,10 +344,10 @@ struct FirstSetupView: View {
     private var certificateStep: some View {
         VStack(alignment: .leading, spacing: 20) {
             certificateCard(
-                title: "第 1 步：下载证书",
+                title: "Step 1: Download the Certificate",
                 icon: "arrow.down.circle",
-                description: "下载本机随机生成的 CA 根证书。私钥仅保存在此设备的钥匙串中，不会随证书文件导出。App 会弹出 Safari 下载页；出现配置描述文件下载提示时，选择「允许」。",
-                actionTitle: "打开下载页",
+                description: "Download the CA root certificate generated specifically for this device. Its private key remains in this iPhone's Keychain and is never included in the downloaded certificate file. Safari will open a download page; when iOS asks to allow a configuration profile download, tap Allow.",
+                actionTitle: "Open Download Page",
                 actionIcon: "arrow.down.circle.fill",
                 complete: downloadedDone,
                 action: {
@@ -355,17 +355,17 @@ struct FirstSetupView: View {
                         if let url = await setup.proxy.prepareCertificateDownloadURL() {
                             certificateDownloadDestination = CertificateDownloadDestination(url: url)
                         } else {
-                            setupActionError = setup.proxy.error ?? "无法准备证书下载页面，请查看诊断日志"
+                            setupActionError = setup.proxy.error ?? "The certificate download page could not be prepared. Check the diagnostic logs for details."
                         }
                     }
                 },
                 markComplete: { downloadedDone = true }
             )
             certificateCard(
-                title: "第 2 步：安装证书",
+                title: "Step 2: Install the Certificate",
                 icon: "square.and.arrow.down",
-                description: "下载完成后打开系统「设置」。如果顶部显示「已下载描述文件」，点进去安装；否则进入「通用 → VPN 与设备管理」，找到 Location Spoofer CA 并完成安装。",
-                actionTitle: "去安装",
+                description: "After the download finishes, open the Settings app. If Profile Downloaded appears near the top, tap it and install the profile. Otherwise go to General → VPN & Device Management, select Location Spoofer CA, and install it.",
+                actionTitle: "Open Settings",
                 actionIcon: "gearshape",
                 complete: installedDone,
                 action: { openSettings(.general) },
@@ -373,14 +373,14 @@ struct FirstSetupView: View {
             )
             setupScreenshot(
                 assetName: "AppModeCertificateInstall",
-                title: "安装证书",
-                caption: "1 在「VPN 与设备管理」中打开 Location Spoofer CA 描述文件并完成安装。"
+                title: "Install the Certificate",
+                caption: "1 Under VPN & Device Management, open the Location Spoofer CA profile and complete the installation."
             )
             certificateCard(
-                title: "第 3 步：信任证书",
+                title: "Step 3: Trust the Certificate",
                 icon: "shield.checkered",
-                description: "安装后进入「设置 → 通用 → 关于本机 → 证书信任设置」，找到 Location Spoofer CA 并开启完全信任。iOS 保留钥匙串数据时，重装 App 会继续复用同一证书。",
-                actionTitle: "去信任",
+                description: "After installation, go to Settings → General → About → Certificate Trust Settings. Find Location Spoofer CA and enable full trust. If iOS keeps the app's Keychain data, reinstalling the app will continue to use the same certificate.",
+                actionTitle: "Open Trust Settings",
                 actionIcon: "shield.checkered",
                 complete: trustedDone,
                 action: { openSettings(.general) },
@@ -388,8 +388,8 @@ struct FirstSetupView: View {
             )
             setupScreenshot(
                 assetName: "AppModeCertificateTrust",
-                title: "信任证书",
-                caption: "1 在「证书信任设置」中为 Location Spoofer CA 开启完全信任。"
+                title: "Trust the Certificate",
+                caption: "1 Under Certificate Trust Settings, enable full trust for Location Spoofer CA."
             )
         }
     }
@@ -401,7 +401,7 @@ struct FirstSetupView: View {
                     .font(.footnote)
                     .foregroundStyle(.orange)
             }
-            GroupBox(label: Label("选择第三方代理客户端", systemImage: "app.badge.checkmark")) {
+            GroupBox(label: Label("Choose a Third-Party Proxy Client", systemImage: "app.badge.checkmark")) {
                 VStack(spacing: 0) {
                     ForEach(ThirdPartyProxyClient.allCases) { client in
                         Button {
@@ -428,43 +428,43 @@ struct FirstSetupView: View {
                 }
             }
 
-            Text("除 Shadowrocket 外，当前客户端配置尚未完成真机验证，页面只提供模块导入入口和通用配置提醒。")
+            Text("Only the Shadowrocket setup has been tested on a physical device. For other clients, this page provides the module import link and general configuration guidance only.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
-            DisclosureGroup("第三方客户端适配说明") {
+            DisclosureGroup("Third-Party Client Integration Notes") {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("工作原理")
+                    Text("How It Works")
                         .font(.subheadline.bold())
-                    Text("App 不连接远程坐标服务器，而是向 Apple 域名发起一个约定请求。第三方客户端需要在本机拦截该请求、保存 WGS-84 坐标并返回 JSON；定位模块再读取同一份数据，修改 Apple WLOC 响应。")
+                    Text("The app does not send coordinates to a remote server. Instead, it makes a defined request to an Apple hostname. The third-party client must intercept that request locally, store the WGS-84 coordinates, and return JSON. The location module then reads the same stored data and modifies the Apple WLOC response.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
 
-                    Text("配置接口")
+                    Text("Configuration Endpoint")
                         .font(.subheadline.bold())
                     Text(ThirdPartyProxyManager.configurationEndpoint.absoluteString)
                         .font(.caption.monospaced())
                         .textSelection(.enabled)
                     Text("""
-                    查询：GET ?action=query
-                    保存：GET ?lon=<经度>&lat=<纬度>&acc=<精度>
-                    清除：GET ?action=clear
+                    Query: GET ?action=query
+                    Save: GET ?lon=<longitude>&lat=<latitude>&acc=<accuracy>
+                    Clear: GET ?action=clear
                     """)
                         .font(.caption.monospaced())
                         .textSelection(.enabled)
 
-                    Text("返回格式")
+                    Text("Response Format")
                         .font(.subheadline.bold())
                     Text("""
-                    成功：{"success":true,"longitude":113.0,"latitude":22.0,"accuracy":25}
-                    失败：{"success":false,"error":"错误说明"}
+                    Success: {"success":true,"longitude":113.0,"latitude":22.0,"accuracy":25}
+                    Failure: {"success":false,"error":"Error description"}
                     """)
                         .font(.caption.monospaced())
                         .textSelection(.enabled)
 
-                    Text("适配要求")
+                    Text("Integration Requirements")
                         .font(.subheadline.bold())
-                    Text("客户端需要支持请求脚本、持久化存储、HTTP 200 JSON 响应、Apple WLOC 响应脚本，以及 gs-loc.apple.com / gs-loc-cn.apple.com 的 HTTPS 解密。保存接口和 WLOC 响应脚本必须读取同一份持久化数据。")
+                    Text("The client must support request scripts, persistent storage, HTTP 200 JSON responses, response scripting for Apple WLOC traffic, and HTTPS decryption for gs-loc.apple.com and gs-loc-cn.apple.com. The save endpoint and WLOC response script must use the same persistent data store.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -478,7 +478,7 @@ struct FirstSetupView: View {
         return VStack(alignment: .leading, spacing: 16) {
             if showThirdPartyRepairReason {
                 Label(
-                    "检测到第三方代理连接异常，请检查模块、MITM 和代理连接后重新检测。",
+                    "The third-party proxy connection failed. Check the module, MITM settings, and proxy connection, then run the test again.",
                     systemImage: "exclamationmark.triangle.fill"
                 )
                 .font(.footnote)
@@ -486,25 +486,25 @@ struct FirstSetupView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            GroupBox(label: Label("第 1 步：导入 \(client.name) 模块", systemImage: "square.and.arrow.down")) {
+            GroupBox(label: Label("Step 1: Import the \(client.name) Module", systemImage: "square.and.arrow.down")) {
                 VStack(alignment: .leading, spacing: 12) {
-                    instructionRow(1, "复制 \(client.name) 的模块订阅地址。")
+                    instructionRow(1, "Copy the module subscription URL for \(client.name).")
                     Button {
                         UIPasteboard.general.string = client.subscriptionURL.absoluteString
                         copiedSubscriptionURL = true
                     } label: {
-                        Label(copiedSubscriptionURL ? "已复制模块订阅地址" : "复制模块订阅地址", systemImage: "doc.on.doc")
+                        Label(copiedSubscriptionURL ? "Module URL Copied" : "Copy Module URL", systemImage: "doc.on.doc")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
 
                     instructionRow(2, client == .shadowrocket
-                        ? "打开 Shadowrocket，进入“配置 → 模块”。"
-                        : "打开 \(client.name)。")
+                        ? "Open Shadowrocket and go to Config → Modules."
+                        : "Open \(client.name).")
                     Button {
                         openThirdPartyClient(client)
                     } label: {
-                        Label("打开 \(client.name)", systemImage: "arrow.up.forward.app")
+                        Label("Open \(client.name)", systemImage: "arrow.up.forward.app")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -512,20 +512,20 @@ struct FirstSetupView: View {
                     if client == .shadowrocket {
                         setupScreenshot(
                             assetName: "ShadowrocketConfigDetails",
-                            title: "进入 Shadowrocket 配置",
-                            caption: "1 点击「模块」进入模块列表，2 可打开当前本地配置详情。"
+                            title: "Open Shadowrocket Configuration",
+                            caption: "1 Tap Modules to open the module list. 2 You can also open the details of the current local configuration."
                         )
                     }
 
                     if client == .shadowrocket {
-                        instructionRow(3, "点击右上角“+”，粘贴模块订阅地址并导入，然后确认模块已启用。")
+                        instructionRow(3, "Tap + in the top-right corner, paste the module subscription URL, import it, and confirm that the module is enabled.")
                         setupScreenshot(
                             assetName: "ShadowrocketModuleImport",
-                            title: "导入 Shadowrocket 模块",
-                            caption: "1 点击右上角加号导入模块，2 确认模块已启用。"
+                            title: "Import the Shadowrocket Module",
+                            caption: "1 Tap + in the top-right corner to import the module. 2 Confirm that the module is enabled."
                         )
                     } else {
-                        instructionRow(3, "在 \(client.name) 中导入刚才复制的模块订阅地址。")
+                        instructionRow(3, "In \(client.name), import the module subscription URL you just copied.")
                     }
                 }
             }
@@ -533,13 +533,13 @@ struct FirstSetupView: View {
             if client == .shadowrocket {
                 shadowrocketHTTPSDecryptionGuide
             } else {
-                GroupBox(label: Label("第 2 步：完成 \(client.name) 配置", systemImage: "slider.horizontal.3")) {
+                GroupBox(label: Label("Step 2: Finish Configuring \(client.name)", systemImage: "slider.horizontal.3")) {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("请在 \(client.name) 中完成相应配置。")
+                        Text("Complete the required configuration in \(client.name).")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Text("配置时请使用 gs-loc.apple.com 和 gs-loc-cn.apple.com 两个域名。")
+                        Text("Use both gs-loc.apple.com and gs-loc-cn.apple.com as the HTTPS decryption hostnames.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -551,7 +551,7 @@ struct FirstSetupView: View {
             if let thirdPartyFailureLog {
                 testResultView(
                     success: false,
-                    title: "接口连接失败",
+                    title: "Endpoint Connection Failed",
                     log: thirdPartyFailureLog
                 )
                 .id("thirdPartyFailureLog")
@@ -560,36 +560,36 @@ struct FirstSetupView: View {
     }
 
     private var shadowrocketHTTPSDecryptionGuide: some View {
-        GroupBox(label: Label("第 2 步：配置 HTTPS 解密", systemImage: "lock.open")) {
+        GroupBox(label: Label("Step 2: Configure HTTPS Decryption", systemImage: "lock.open")) {
             VStack(alignment: .leading, spacing: 12) {
-                instructionRow(1, "进入“配置 → 本地文件”，找到带黄点的配置，点击右侧 i 图标。")
-                instructionRow(2, "进入“HTTPS 解密”，开启解密开关。")
-                instructionRow(3, "在域名列表中添加 gs-loc.apple.com 和 gs-loc-cn.apple.com。")
+                instructionRow(1, "Go to Config → Local Files, find the configuration marked with a yellow dot, and tap the info button on its right.")
+                instructionRow(2, "Open HTTPS Decryption and turn it on.")
+                instructionRow(3, "Add gs-loc.apple.com and gs-loc-cn.apple.com to the hostname list.")
                 setupScreenshot(
                     assetName: "ShadowrocketHTTPSDecryption",
-                    title: "配置 HTTPS 解密",
-                    caption: "1 开启 HTTPS 解密，2 添加 gs-loc.apple.com 和 gs-loc-cn.apple.com，3 打开证书设置。"
+                    title: "Configure HTTPS Decryption",
+                    caption: "1 Enable HTTPS Decryption. 2 Add gs-loc.apple.com and gs-loc-cn.apple.com. 3 Open the certificate settings."
                 )
 
                 mitmHostnameCopyButton
 
-                instructionRow(4, "按 Shadowrocket 提示生成并完成证书授权。")
+                instructionRow(4, "Follow Shadowrocket's prompts to generate, install, and trust its certificate.")
                 setupScreenshot(
                     assetName: "ShadowrocketHTTPSCA",
-                    title: "授权 Shadowrocket 证书",
-                    caption: "1 打开 Shadowrocket 证书项并按提示安装、授权。"
+                    title: "Trust the Shadowrocket Certificate",
+                    caption: "1 Open Shadowrocket's certificate settings, then follow the prompts to install and trust the certificate."
                 )
-                instructionRow(5, "返回 HTTPS 解密页面，点击右上角勾号保存，然后开启代理。")
+                instructionRow(5, "Return to the HTTPS Decryption page, tap the checkmark in the top-right corner to save, then connect the proxy.")
 
                 Button {
                     openThirdPartyClient(.shadowrocket)
                 } label: {
-                    Label("打开 Shadowrocket 继续配置", systemImage: "arrow.up.forward.app")
+                    Label("Open Shadowrocket to Continue", systemImage: "arrow.up.forward.app")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
 
-                Text("App 只能唤起 Shadowrocket，无法通过公开接口直接跳转到“模块”或“HTTPS 解密”页面。")
+                Text("The app can open Shadowrocket, but Shadowrocket does not provide a public link that opens the Modules or HTTPS Decryption page directly.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -602,7 +602,7 @@ struct FirstSetupView: View {
             copiedMITMHostname = true
         } label: {
             Label(
-                copiedMITMHostname ? "已复制两个解密域名" : "复制两个解密域名",
+                copiedMITMHostname ? "Hostnames Copied" : "Copy Both Hostnames",
                 systemImage: "doc.on.doc"
             )
             .frame(maxWidth: .infinity)
@@ -660,7 +660,7 @@ struct FirstSetupView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("\(title)：\(caption)")
-            .accessibilityHint("轻点查看大图")
+            .accessibilityHint("Tap to view the full-size image")
         }
     }
 
@@ -669,7 +669,7 @@ struct FirstSetupView: View {
         UIApplication.shared.open(url, options: [:]) { opened in
             guard !opened else { return }
             Task { @MainActor in
-                manualHint = "无法打开 \(client.name)，请确认客户端已安装后手动打开。"
+                manualHint = "Unable to open \(client.name). Confirm that it is installed, then open it manually."
             }
         }
     }
@@ -715,7 +715,7 @@ struct FirstSetupView: View {
                     .tint(.blue)
                     Button(action: markComplete) {
                         Label(
-                            complete ? "已完成 ✓" : "已完成",
+                            complete ? "Completed ✓" : "Mark Complete",
                             systemImage: complete ? "checkmark.circle.fill" : "circle"
                         )
                         .frame(maxWidth: .infinity)
@@ -732,7 +732,7 @@ struct FirstSetupView: View {
         let success = result.isSuccess
         testResultView(
             success: success,
-            title: success ? "环境检测通过" : failureSummary(result),
+            title: success ? "Environment Check Passed" : failureSummary(result),
             log: setup.testLog
         )
     }
@@ -749,7 +749,7 @@ struct FirstSetupView: View {
                 Button {
                     showDiagnostics = true
                 } label: {
-                    Label("查看诊断日志", systemImage: "doc.text.magnifyingglass")
+                    Label("View Diagnostic Logs", systemImage: "doc.text.magnifyingglass")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -767,7 +767,7 @@ struct FirstSetupView: View {
             Button {
                 verifyAfterProxyConfirmation()
             } label: {
-                actionLabel("完成")
+                actionLabel("Continue")
             }
             .buttonStyle(.borderedProminent)
             .disabled(isVerifying)
@@ -775,7 +775,7 @@ struct FirstSetupView: View {
             Button {
                 verifyAfterCertificateConfirmation()
             } label: {
-                actionLabel("完成")
+                actionLabel("Continue")
             }
             .buttonStyle(.borderedProminent)
             .disabled(!certificateStepsComplete || isVerifying)
@@ -783,14 +783,14 @@ struct FirstSetupView: View {
             Button {
                 step = .thirdPartyImport
             } label: {
-                actionLabel("完成")
+                actionLabel("Continue")
             }
                 .buttonStyle(.borderedProminent)
         } else {
             Button {
                 verifyThirdPartyConnection()
             } label: {
-                actionLabel("完成")
+                actionLabel("Run Connection Test")
             }
             .buttonStyle(.borderedProminent)
             .disabled(isVerifying || thirdPartyProxy.isRequesting)
@@ -825,10 +825,10 @@ struct FirstSetupView: View {
         thirdPartyTestFailure = nil
         showsThirdPartyFailureLog = false
         setup.message = ""
-        RuntimeLogger.info("APP", "ThirdPartyProxy", "开始第三方代理连接检测", details: [
-            "当前客户端": client.name,
-            "请求动作": "WLOC query",
-            "检查范围": "模块拦截、MITM、代理/VPN连接"
+        RuntimeLogger.info("APP", "ThirdPartyProxy", "Started third-party proxy connection test", details: [
+            "Client": client.name,
+            "Request": "WLOC query",
+            "Checks": "Module interception, MITM, proxy/VPN connection"
         ])
         Task { @MainActor in
             defer { isVerifying = false }
@@ -839,12 +839,12 @@ struct FirstSetupView: View {
                     motionSimulation.setEnabled(false)
                 }
                 let elapsedMilliseconds = Int(Date().timeIntervalSince(startedAt) * 1_000)
-                RuntimeLogger.info("APP", "ThirdPartyProxy", "第三方代理连接检测通过", details: [
-                    "当前客户端": client.name,
-                    "请求动作": "WLOC query",
-                    "连接状态": response.latitude == nil || response.longitude == nil ? "已连接，无保存坐标" : "已连接，有保存坐标",
-                    "运动状态模拟": advancedFeaturesAvailable ? "支持" : "不支持，已关闭",
-                    "耗时毫秒": String(elapsedMilliseconds)
+                RuntimeLogger.info("APP", "ThirdPartyProxy", "Third-party proxy connection test passed", details: [
+                    "Client": client.name,
+                    "Request": "WLOC query",
+                    "Connection": response.latitude == nil || response.longitude == nil ? "Connected; no saved coordinates" : "Connected; saved coordinates found",
+                    "Motion simulation": advancedFeaturesAvailable ? "Supported" : "Unsupported; disabled",
+                    "Elapsed milliseconds": String(elapsedMilliseconds)
                 ])
                 onComplete()
             } catch {
@@ -854,30 +854,30 @@ struct FirstSetupView: View {
                 RuntimeLogger.error(
                     "APP",
                     "ThirdPartyProxy",
-                    "第三方代理连接检测失败",
+                    "Third-party proxy connection test failed",
                     error: error,
                     details: [
-                        "当前客户端": client.name,
-                        "请求动作": "WLOC query",
-                        "连接状态": connectionState,
-                        "耗时毫秒": String(elapsedMilliseconds),
-                        "错误类型": errorType,
-                        "处理建议": ThirdPartyProxyError.recoverySuggestion(for: error)
+                        "Client": client.name,
+                        "Request": "WLOC query",
+                        "Connection": connectionState,
+                        "Elapsed milliseconds": String(elapsedMilliseconds),
+                        "Error type": errorType,
+                        "Suggested fix": ThirdPartyProxyError.recoverySuggestion(for: error)
                     ]
                 )
                 thirdPartyTestFailure = ThirdPartyConnectionTestFailure(
                     message: """
-                    ======== 第三方代理连接检测 ========
-                    当前客户端：\(client.name)
-                    配置接口：/wloc-settings/save
-                    请求动作：WLOC query
-                    检查范围：模块拦截、MITM、证书、代理/VPN 连接
-                    连接状态：\(connectionState)
-                    检测结果：失败
-                    耗时：\(elapsedMilliseconds) ms
-                    错误类型：\(errorType)
-                    错误详情：\(error.localizedDescription)
-                    处理建议：\(ThirdPartyProxyError.recoverySuggestion(for: error))。
+                    ======== Third-Party Proxy Connection Test ========
+                    Client: \(client.name)
+                    Configuration endpoint: /wloc-settings/save
+                    Request: WLOC query
+                    Checks: Module interception, MITM, certificate, and proxy/VPN connection
+                    Connection: \(connectionState)
+                    Result: Failed
+                    Elapsed time: \(elapsedMilliseconds) ms
+                    Error type: \(errorType)
+                    Details: \(error.localizedDescription)
+                    Suggested fix: \(ThirdPartyProxyError.recoverySuggestion(for: error)).
                     """
                 )
                 showsThirdPartyFailureLog = true
@@ -888,11 +888,11 @@ struct FirstSetupView: View {
     private var thirdPartyConnectionStateDescription: String {
         switch thirdPartyProxy.connectionState {
         case .unknown:
-            return "未检测"
+            return "Not tested"
         case .connected(let active):
-            return active ? "已连接，有保存坐标" : "已连接，无保存坐标"
+            return active ? "Connected; saved coordinates found" : "Connected; no saved coordinates"
         case .failed(let message):
-            return "连接失败（\(message)）"
+            return "Connection failed (\(message))"
         }
     }
 
@@ -945,14 +945,14 @@ struct FirstSetupView: View {
 
     private func failureSummary(_ result: VerificationResult) -> String {
         switch result {
-        case .certNotTrusted: return "证书尚未安装或信任"
-        case .wifiProxyNotConfigured: return "Wi-Fi 代理未正确设置"
-        case .proxyNotRunning: return "本地代理未能启动"
-        case .verificationInProgress: return "检测仍在进行"
-        case .verificationSuperseded: return "检测结果已过期"
-        case .coordinateWriteFailed: return "坐标写入失败"
-        case .patchFailed: return "定位改写检测失败"
-        case .success: return "环境检测通过"
+        case .certNotTrusted: return "The certificate is not installed or trusted"
+        case .wifiProxyNotConfigured: return "The Wi-Fi proxy is not configured correctly"
+        case .proxyNotRunning: return "The local proxy could not start"
+        case .verificationInProgress: return "The check is still running"
+        case .verificationSuperseded: return "This check result is no longer current"
+        case .coordinateWriteFailed: return "The coordinates could not be saved"
+        case .patchFailed: return "The location modification test failed"
+        case .success: return "Environment check passed"
         }
     }
 

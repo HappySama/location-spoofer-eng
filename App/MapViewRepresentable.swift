@@ -49,10 +49,10 @@ struct MapViewRepresentable: UIViewRepresentable {
         map.delegate = context.coordinator
         map.showsUserLocation = true
         let initialDistance = max(50, initialViewportMeters)
-        RuntimeLogger.info("APP", "地图", "makeUIView", details: [
+        RuntimeLogger.info("APP", "Map", "makeUIView", details: [
             "zoom": String(initialDistance),
-            "初始坐标来源": String(describing: selection.source),
-            "地图标准": CoordinateConverter.currentMapCoordinateSystem.rawValue
+            "Initial coordinate source": String(describing: selection.source),
+            "Map coordinate system": CoordinateConverter.currentMapCoordinateSystem.rawValue
         ])
         map.setRegion(
             MKCoordinateRegion(
@@ -240,20 +240,20 @@ struct MapViewRepresentable: UIViewRepresentable {
 
         func mapView(_ mapView: MKMapView, didUpdate userLocation: MKUserLocation) {
             guard let location = visibleUserLocationSample(userLocation) else {
-                RuntimeLogger.warning("APP", "实时定位", "MapKit 蓝点更新但 location 为空", details: [
-                    "来源": "MKMapView.didUpdate"
+                RuntimeLogger.warning("APP", "Real-Time Location", "MapKit blue dot updated with an empty location", details: [
+                    "Source": "MKMapView.didUpdate"
                 ])
                 return
             }
             guard CLLocationCoordinate2DIsValid(location.coordinate) else {
-                RealtimeLocationTrace.log("拒绝 MapKit 蓝点样本：坐标无效", location: location, details: [
-                    "来源": "MKMapView.didUpdate"
+                RealtimeLocationTrace.log("Rejected MapKit blue-dot sample: invalid coordinates", location: location, details: [
+                    "Source": "MKMapView.didUpdate"
                 ], level: .warning)
                 return
             }
             guard location.horizontalAccuracy >= 0 else {
-                RealtimeLocationTrace.log("拒绝 MapKit 蓝点样本：水平精度无效", location: location, details: [
-                    "来源": "MKMapView.didUpdate"
+                RealtimeLocationTrace.log("Rejected MapKit blue-dot sample: invalid horizontal accuracy", location: location, details: [
+                    "Source": "MKMapView.didUpdate"
                 ], level: .warning)
                 return
             }
