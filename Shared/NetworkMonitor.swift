@@ -3,9 +3,9 @@ import Foundation
 import SystemConfiguration.CaptiveNetwork
 
 enum WiFiChangeReason: String {
-    case reconnected = "Wi-Fi 恢复连接"
-    case interfaceChanged = "网络接口切换到 Wi-Fi"
-    case ssidChanged = "SSID 发生变化"
+    case reconnected = "Wi-Fi reconnected"
+    case interfaceChanged = "Network interface changed to Wi-Fi"
+    case ssidChanged = "SSID changed"
 }
 
 @MainActor

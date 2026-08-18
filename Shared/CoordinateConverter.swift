@@ -62,8 +62,8 @@ enum CoordinateConverter {
 
         var diagnosticName: String {
             switch self {
-            case .gcj02: return "国内标准(GCJ-02)"
-            case .wgs84: return "国际标准(WGS-84)"
+            case .gcj02: return "China Standard (GCJ-02)"
+            case .wgs84: return "Global Standard (WGS-84)"
             }
         }
     }
@@ -74,7 +74,7 @@ enum CoordinateConverter {
         let distanceToGCJ02: CLLocationDistance
 
         var inferredName: String {
-            inferredSystem?.diagnosticName ?? "无法判定"
+            inferredSystem?.diagnosticName ?? "Unable to determine"
         }
     }
 
@@ -103,15 +103,15 @@ enum CoordinateConverter {
     @MainActor
     static func resolveInitialMapCoordinateSystem() async -> MapCoordinateSystem {
         guard !mapCoordinateSystemCheckPending else {
-            RuntimeLogger.warning("APP", "坐标转换", "地图坐标标准检测已有请求进行中")
+            RuntimeLogger.warning("APP", "Coordinate Conversion", "A map coordinate-system detection request is already running")
             return currentMapCoordinateSystem
         }
         mapCoordinateSystemCheckPending = true
         defer { mapCoordinateSystemCheckPending = false }
-        RuntimeLogger.info("APP", "坐标转换", "地图坐标标准检测开始", details: [
-            "锚点": "22.283819,114.158439",
-            "判定规则": "首条名称=林士街→GCJ-02，否则→WGS-84",
-            "缓存": "false"
+        RuntimeLogger.info("APP", "Coordinate Conversion", "Map coordinate-system detection started", details: [
+            "Anchor": "22.283819,114.158439",
+            "Rule": "First result named 林士街 → GCJ-02; otherwise → WGS-84",
+            "Cached": "false"
         ])
 
         let nextType: MapCoordinateSystem
@@ -119,16 +119,16 @@ enum CoordinateConverter {
         case let .response(name, count):
             nextType = mapCoordinateSystem(forFixedAnchorFirstResultName: name)
             initialMapCoordinateSystemUsedFallback = false
-            RuntimeLogger.info("APP", "坐标转换", "地图坐标标准检测获得明确结果", details: [
-                "首条名称": name,
-                "结果数": String(count),
-                "命中林士街": String(name == "林士街"),
-                "最终标准": nextType.rawValue,
-                "结果来源": "固定锚点"
+            RuntimeLogger.info("APP", "Coordinate Conversion", "Map coordinate-system detection returned a definitive result", details: [
+                "First result name": name,
+                "Result count": String(count),
+                "Matched anchor name": String(name == "林士街"),
+                "Final coordinate system": nextType.rawValue,
+                "Source": "Fixed anchor"
             ])
         case .unavailable(let reason), .timedOut(let reason):
-            RuntimeLogger.warning("APP", "坐标转换", "地图坐标标准检测不可用，开始实时定位兜底", details: [
-                "原因": reason
+            RuntimeLogger.warning("APP", "Coordinate Conversion", "Map coordinate-system detection unavailable; using real-time location as a fallback", details: [
+                "Reason": reason
             ])
             let realtime = await RealtimeLocationManager.shared.requestLocation()
             if let realtime,
@@ -139,25 +139,25 @@ enum CoordinateConverter {
                 nextType = .gcj02
             }
             initialMapCoordinateSystemUsedFallback = true
-            RuntimeLogger.warning("APP", "坐标转换", "地图坐标标准检测使用兜底结果", details: [
-                "探测失败原因": reason,
-                "实时定位存在": String(realtime != nil),
-                "最终标准": nextType.rawValue,
-                "结果来源": realtime == nil ? "默认国内标准" : "实时定位服务区域"
+            RuntimeLogger.warning("APP", "Coordinate Conversion", "Map coordinate-system detection used a fallback result", details: [
+                "Detection failure": reason,
+                "Real-time location available": String(realtime != nil),
+                "Final coordinate system": nextType.rawValue,
+                "Source": realtime == nil ? "Default China standard" : "Real-time location service region"
             ])
         case .cancelled:
             initialMapCoordinateSystemUsedFallback = true
-            RuntimeLogger.warning("APP", "坐标转换", "地图坐标标准检测被取消，保留默认国内标准", details: [
-                "最终标准": currentMapCoordinateSystem.rawValue
+            RuntimeLogger.warning("APP", "Coordinate Conversion", "Map coordinate-system detection cancelled; keeping the default China standard", details: [
+                "Final coordinate system": currentMapCoordinateSystem.rawValue
             ])
             return currentMapCoordinateSystem
         }
 
         currentMapCoordinateSystem = nextType
-        RuntimeLogger.info("APP", "坐标转换", "地图坐标标准已确定，允许创建地图", details: [
-            "最终标准": nextType.rawValue,
-            "使用兜底": String(initialMapCoordinateSystemUsedFallback),
-            "缓存": "false"
+        RuntimeLogger.info("APP", "Coordinate Conversion", "Map coordinate system determined; map creation can proceed", details: [
+            "Final coordinate system": nextType.rawValue,
+            "Used fallback": String(initialMapCoordinateSystemUsedFallback),
+            "Cached": "false"
         ])
         return nextType
     }
@@ -168,9 +168,9 @@ enum CoordinateConverter {
     @MainActor
     static func refreshRuntimeMapCoordinateSystem(reason: String) async -> RuntimeMapCoordinateSystemRefreshResult {
         guard !mapCoordinateSystemCheckPending else {
-            RuntimeLogger.info("APP", "坐标转换", "地图坐标标准运行期检测合并到进行中请求", details: [
-                "触发原因": reason,
-                "当前标准": currentMapCoordinateSystem.rawValue
+            RuntimeLogger.info("APP", "Coordinate Conversion", "Runtime coordinate-system detection joined the active request", details: [
+                "Trigger": reason,
+                "Current coordinate system": currentMapCoordinateSystem.rawValue
             ])
             return .unchanged(currentMapCoordinateSystem)
         }
@@ -178,54 +178,54 @@ enum CoordinateConverter {
         defer { mapCoordinateSystemCheckPending = false }
 
         let previous = currentMapCoordinateSystem
-        RuntimeLogger.info("APP", "坐标转换", "地图坐标标准运行期检测开始", details: [
-            "触发原因": reason,
-            "检测前标准": previous.rawValue,
-            "锚点": "22.283819,114.158439",
-            "缓存": "false"
+        RuntimeLogger.info("APP", "Coordinate Conversion", "Runtime map coordinate-system detection started", details: [
+            "Trigger": reason,
+            "Previous coordinate system": previous.rawValue,
+            "Anchor": "22.283819,114.158439",
+            "Cached": "false"
         ])
 
         switch await fixedAnchorCoordinateSystemProbe() {
         case let .response(name, count):
             guard !Task.isCancelled else {
-                RuntimeLogger.info("APP", "坐标转换", "地图坐标标准运行期检测结果已过期，取消写入", details: [
-                    "触发原因": reason,
-                    "保留标准": previous.rawValue
+                RuntimeLogger.info("APP", "Coordinate Conversion", "Runtime coordinate-system result is stale; update cancelled", details: [
+                    "Trigger": reason,
+                    "Retained coordinate system": previous.rawValue
                 ])
                 return .cancelled
             }
             let detected = mapCoordinateSystem(forFixedAnchorFirstResultName: name)
             initialMapCoordinateSystemUsedFallback = false
             guard detected != previous else {
-                RuntimeLogger.info("APP", "坐标转换", "地图坐标标准运行期检测完成，标准未变化", details: [
-                    "触发原因": reason,
-                    "首条名称": name,
-                    "结果数": String(count),
-                    "确认标准": detected.rawValue
+                RuntimeLogger.info("APP", "Coordinate Conversion", "Runtime coordinate-system detection completed with no change", details: [
+                    "Trigger": reason,
+                    "First result name": name,
+                    "Result count": String(count),
+                    "Confirmed coordinate system": detected.rawValue
                 ])
                 return .unchanged(detected)
             }
             let change = MapCoordinateSystemChange(previous: previous, current: detected)
             currentMapCoordinateSystem = detected
-            RuntimeLogger.warning("APP", "坐标转换", "地图坐标标准运行期检测发现切换", details: [
-                "触发原因": reason,
-                "首条名称": name,
-                "结果数": String(count),
+            RuntimeLogger.warning("APP", "Coordinate Conversion", "Runtime detection found a map coordinate-system change", details: [
+                "Trigger": reason,
+                "First result name": name,
+                "Result count": String(count),
                 "from": previous.rawValue,
                 "to": detected.rawValue
             ])
             return .changed(change)
         case .unavailable(let failureReason), .timedOut(let failureReason):
-            RuntimeLogger.warning("APP", "坐标转换", "地图坐标标准运行期检测失败，保留当前标准", details: [
-                "触发原因": reason,
-                "原因": failureReason,
-                "保留标准": previous.rawValue
+            RuntimeLogger.warning("APP", "Coordinate Conversion", "Runtime coordinate-system detection failed; retaining the current system", details: [
+                "Trigger": reason,
+                "Reason": failureReason,
+                "Retained coordinate system": previous.rawValue
             ])
             return .unavailable(reason: failureReason)
         case .cancelled:
-            RuntimeLogger.info("APP", "坐标转换", "地图坐标标准运行期检测已取消", details: [
-                "触发原因": reason,
-                "保留标准": previous.rawValue
+            RuntimeLogger.info("APP", "Coordinate Conversion", "Runtime coordinate-system detection cancelled", details: [
+                "Trigger": reason,
+                "Retained coordinate system": previous.rawValue
             ])
             return .cancelled
         }
@@ -241,21 +241,21 @@ enum CoordinateConverter {
     static func correctMapCoordinateSystemUsingRealtime(_ coordinate: CLLocationCoordinate2D) -> MapCoordinateSystemChange? {
         guard CLLocationCoordinate2DIsValid(coordinate) else { return nil }
         guard initialMapCoordinateSystemUsedFallback else {
-            RuntimeLogger.info("APP", "坐标转换", "实时定位不覆盖固定锚点的明确检测结果", details: [
-                "当前标准": currentMapCoordinateSystem.rawValue
+            RuntimeLogger.info("APP", "Coordinate Conversion", "Real-time location did not override the definitive fixed-anchor result", details: [
+                "Current coordinate system": currentMapCoordinateSystem.rawValue
             ])
             return nil
         }
         let next: MapCoordinateSystem = usesGCJ02ServiceArea(lat: coordinate.latitude, lon: coordinate.longitude) ? .gcj02 : .wgs84
         guard next != currentMapCoordinateSystem else {
-            RuntimeLogger.info("APP", "坐标转换", "实时定位确认兜底地图坐标标准无需修正", details: [
-                "当前标准": currentMapCoordinateSystem.rawValue
+            RuntimeLogger.info("APP", "Coordinate Conversion", "Real-time location confirmed that the fallback coordinate system needs no correction", details: [
+                "Current coordinate system": currentMapCoordinateSystem.rawValue
             ])
             return nil
         }
         let change = MapCoordinateSystemChange(previous: currentMapCoordinateSystem, current: next)
         currentMapCoordinateSystem = next
-        RuntimeLogger.warning("APP", "坐标转换", "实时定位修正启动兜底地图坐标标准", details: [
+        RuntimeLogger.warning("APP", "Coordinate Conversion", "Real-time location corrected the startup fallback coordinate system", details: [
             "from": change.previous.rawValue,
             "to": change.current.rawValue
         ])
@@ -272,7 +272,7 @@ enum CoordinateConverter {
             await withCheckedContinuation { continuation in
                 let timeout = DispatchWorkItem {
                     search.cancel()
-                    resolver.resolve(.timedOut(reason: "固定锚点查询超过5秒"))
+                    resolver.resolve(.timedOut(reason: "Fixed-anchor query exceeded 5 seconds"))
                 }
                 resolver.install(continuation, timeout: timeout)
                 guard !resolver.isResolved else { return }
@@ -288,7 +288,7 @@ enum CoordinateConverter {
                     guard let first = items.first,
                           let name = first.name?.trimmingCharacters(in: .whitespacesAndNewlines),
                           !name.isEmpty else {
-                        resolver.resolve(.unavailable(reason: "固定锚点查询返回空结果"))
+                        resolver.resolve(.unavailable(reason: "Fixed-anchor query returned no results"))
                         return
                     }
                     resolver.resolve(.response(name: name, count: items.count))

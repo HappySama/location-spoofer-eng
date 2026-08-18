@@ -13,8 +13,8 @@ enum CertificateAuthorityStoreError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidAuthority: return "本地 CA 证书或私钥无效"
-        case let .keychain(status): return "无法写入设备钥匙串（\(status)）"
+        case .invalidAuthority: return "The local CA certificate or private key is invalid"
+        case let .keychain(status): return "Unable to write to the device Keychain (\(status))"
         }
     }
 }
@@ -118,14 +118,14 @@ final class CertificateAuthorityStore {
     func ensure() throws -> CertificateAuthority {
         if let authority = try loadValidKeychainAuthority() {
             removeLegacyFilesBestEffort()
-            RuntimeLogger.debug("SHARED", "Certificate.store", "复用设备钥匙串中的 CA")
+            RuntimeLogger.debug("SHARED", "Certificate.store", "Reusing the CA stored in the device Keychain")
             return authority
         }
 
         if let legacy = try loadLegacyAuthority(), validator(legacy) {
             try keychain.save(legacy)
             removeLegacyFilesBestEffort()
-            RuntimeLogger.info("SHARED", "Certificate.store", "旧 CA 已迁移到设备钥匙串")
+            RuntimeLogger.info("SHARED", "Certificate.store", "Migrated the legacy CA to the device Keychain")
             return legacy
         }
 
@@ -133,7 +133,7 @@ final class CertificateAuthorityStore {
         guard validator(authority) else { throw CertificateAuthorityStoreError.invalidAuthority }
         try keychain.save(authority)
         removeLegacyFilesBestEffort()
-        RuntimeLogger.info("SHARED", "Certificate.store", "已生成并保存设备专属 CA")
+        RuntimeLogger.info("SHARED", "Certificate.store", "Generated and saved a device-specific CA")
         return authority
     }
 
@@ -144,13 +144,13 @@ final class CertificateAuthorityStore {
     func reset() throws {
         try removeLegacyFiles()
         try keychain.remove()
-        RuntimeLogger.info("SHARED", "Certificate.store", "已删除设备 CA，等待重新生成")
+        RuntimeLogger.info("SHARED", "Certificate.store", "Deleted the device CA; a new one will be generated")
     }
 
     private func loadValidKeychainAuthority() throws -> CertificateAuthority? {
         guard let authority = try keychain.load() else { return nil }
         guard validator(authority) else {
-            RuntimeLogger.warning("SHARED", "Certificate.store", "钥匙串中的 CA 无效，准备回退")
+            RuntimeLogger.warning("SHARED", "Certificate.store", "The CA in the Keychain is invalid; preparing a fallback")
             try? keychain.remove()
             return nil
         }
@@ -172,7 +172,7 @@ final class CertificateAuthorityStore {
         do {
             try removeLegacyFiles()
         } catch {
-            RuntimeLogger.error("SHARED", "Certificate.store", "删除旧 CA 文件失败，将在下次启动重试", error: error)
+            RuntimeLogger.error("SHARED", "Certificate.store", "Unable to delete the legacy CA file; will retry on the next launch", error: error)
         }
     }
 

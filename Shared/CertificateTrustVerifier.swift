@@ -8,7 +8,7 @@ final class CertificateTrustVerifier {
         guard let pemData = certPEM.data(using: .utf8),
               let block = pemData.pemCertificateBlock,
               let cert = SecCertificateCreateWithData(nil, block as CFData) else {
-            RuntimeLogger.error("APP", "Trust", "无法解析 CA 证书 PEM")
+            RuntimeLogger.error("APP", "Trust", "Unable to parse CA certificate PEM")
             return false
         }
 
@@ -20,7 +20,7 @@ final class CertificateTrustVerifier {
             &trust
         )
         guard createStatus == errSecSuccess, let trust = trust else {
-            RuntimeLogger.error("APP", "Trust", "无法创建 SecTrust")
+            RuntimeLogger.error("APP", "Trust", "Unable to create SecTrust")
             return false
         }
 
@@ -30,12 +30,12 @@ final class CertificateTrustVerifier {
         var error: CFError?
         let result = SecTrustEvaluateWithError(trust, &error)
         if let error {
-            RuntimeLogger.warning("APP", "Trust", "SecTrust 评估返回错误", details: [
+            RuntimeLogger.warning("APP", "Trust", "SecTrust evaluation returned an error", details: [
                 "error": (error as Error).localizedDescription
             ])
         }
 
-        RuntimeLogger.info("APP", "Trust", result ? "CA 证书已被系统信任" : "CA 证书未被系统信任")
+        RuntimeLogger.info("APP", "Trust", result ? "CA certificate is trusted by the system" : "CA certificate is not trusted by the system")
         return result
     }
 }

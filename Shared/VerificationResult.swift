@@ -13,14 +13,14 @@ enum VerificationResult: Equatable, Identifiable {
 
     var id: String {
         switch self {
-        case .success: return "成功"
-        case .proxyNotRunning: return "代理未运行"
-        case .verificationInProgress: return "已有验证正在进行"
-        case .verificationSuperseded: return "验证已被新位置取代"
-        case .certNotTrusted: return "证书未信任"
-        case .wifiProxyNotConfigured: return "WiFi代理未配置"
-        case .coordinateWriteFailed: return "坐标写入失败"
-        case .patchFailed: return "改写验证失败"
+        case .success: return "Success"
+        case .proxyNotRunning: return "Proxy Not Running"
+        case .verificationInProgress: return "Verification Already in Progress"
+        case .verificationSuperseded: return "Verification Superseded by a New Location"
+        case .certNotTrusted: return "Certificate Not Trusted"
+        case .wifiProxyNotConfigured: return "Wi-Fi Proxy Not Configured"
+        case .coordinateWriteFailed: return "Coordinate Write Failed"
+        case .patchFailed: return "Location Modification Test Failed"
         }
     }
 

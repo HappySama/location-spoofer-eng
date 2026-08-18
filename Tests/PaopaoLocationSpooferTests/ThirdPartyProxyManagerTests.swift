@@ -150,7 +150,7 @@ final class ThirdPartyProxyManagerTests: XCTestCase {
             "gs-loc.apple.com, gs-loc-cn.apple.com"
         )
         XCTAssertNil(ThirdPartyProxyClient.shadowrocket.verificationText)
-        XCTAssertTrue(ThirdPartyProxyClient.surge.verificationText?.contains("尚未验证") == true)
+        XCTAssertTrue(ThirdPartyProxyClient.surge.verificationText?.contains("not yet verified") == true)
         XCTAssertEqual(ThirdPartyProxyClient.egern.subscriptionURL, ThirdPartyProxyClient.surge.subscriptionURL)
         XCTAssertTrue(ThirdPartyProxyClient.stash.subscriptionURL.absoluteString.hasPrefix(
             "https://gh-proxy.org/https://raw.githubusercontent.com/xweiba/location-spoofer/main/"

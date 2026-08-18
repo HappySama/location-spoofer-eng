@@ -12,8 +12,8 @@ enum CoreBridgeError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .generationFailed: return "无法生成本地证书"
-        case .serverStartFailed: return "无法启动本地证书服务"
+        case .generationFailed: return "Unable to generate the local certificate"
+        case .serverStartFailed: return "Unable to start the local certificate server"
         }
     }
 }
@@ -28,14 +28,14 @@ enum CoreBridge {
     }
 
     static func generateCertificateAuthority() throws -> CertificateAuthority {
-        RuntimeLogger.info("APP", "Core.CA", "调用 Go Core 生成 CA")
+        RuntimeLogger.info("APP", "Core.CA", "Requested CA generation from Go Core")
         let result = wloccore_generateca()
         guard let certPointer = result.r0, let keyPointer = result.r1 else {
             flushLogs(category: "CA")
             throw CoreBridgeError.generationFailed
         }
         defer { free(certPointer); free(keyPointer) }
-        RuntimeLogger.info("APP", "Core.CA", "Go Core CA 生成成功")
+        RuntimeLogger.info("APP", "Core.CA", "Go Core generated the CA successfully")
         flushLogs(category: "CA")
         return CertificateAuthority(certPEM: String(cString: certPointer), keyPEM: String(cString: keyPointer))
     }
@@ -74,10 +74,10 @@ final class LocalCertificateServer {
 
     func start(authority: CertificateAuthority) throws {
         if handle != 0 {
-            RuntimeLogger.debug("APP", "Certificate.server", "本地证书服务已在运行")
+            RuntimeLogger.debug("APP", "Certificate.server", "Local certificate server is already running")
             return
         }
-        RuntimeLogger.info("APP", "Certificate.server", "调用 Go Core 启动本地证书服务")
+        RuntimeLogger.info("APP", "Certificate.server", "Requested local certificate server startup from Go Core")
         let newHandle: UInt = authority.certPEM.withCString { certPointer in
             authority.keyPEM.withCString { keyPointer in
                 UInt(wloccore_startcertserver(UnsafeMutablePointer(mutating: certPointer), UnsafeMutablePointer(mutating: keyPointer)))
@@ -98,7 +98,7 @@ final class LocalCertificateServer {
         downloadURL = URL(string: "http://127.0.0.1:\(httpPort)/ca.cer")
         probeURL = URL(string: "https://127.0.0.1:\(httpsPort)/health")
         leafHash = String(cString: hashPointer)
-        RuntimeLogger.info("APP", "Certificate.server", "本地证书服务启动成功", details: [
+        RuntimeLogger.info("APP", "Certificate.server", "Local certificate server started successfully", details: [
             "httpPort": String(httpPort),
             "httpsPort": String(httpsPort),
             "leafHash": leafHash
@@ -109,7 +109,7 @@ final class LocalCertificateServer {
     func stop() {
         guard handle != 0 else { return }
         let result = wloccore_stopcertserver(handle)
-        RuntimeLogger.info("APP", "Certificate.server", "停止本地证书服务", details: ["result": String(result)])
+        RuntimeLogger.info("APP", "Certificate.server", "Stopped local certificate server", details: ["result": String(result)])
         CoreBridge.flushLogs(category: "CertificateServer")
         handle = 0
         downloadURL = nil

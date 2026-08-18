@@ -41,32 +41,32 @@ enum ThirdPartyProxyError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            return "第三方代理返回了无法识别的数据"
+            return "The third-party proxy returned unrecognized data"
         case .moduleNotIntercepted:
-            return "请求未被第三方代理模块拦截，请检查模块、MITM 和代理连接"
+            return "The request was not intercepted by the third-party proxy module. Check the module, MITM settings, and proxy connection."
         case .rejected(let message):
             return message
         case .coordinateMismatch:
-            return "第三方代理保存的坐标与当前选点不一致"
+            return "The coordinates saved by the third-party proxy do not match the selected location"
         case .network(let message):
-            return "第三方代理请求失败：\(message)"
+            return "Third-party proxy request failed: \(message)"
         case .moduleOutdated:
-            return "模块版本过低，请重新导入模块"
+            return "The module is outdated. Reimport the latest version."
         }
     }
 
     var recoverySuggestion: String {
         switch self {
         case .moduleOutdated:
-            return "删除旧模块后，重新复制并导入最新模块"
+            return "Delete the old module, then copy and import the latest version"
         default:
-            return "检查模块、MITM、证书和代理/VPN连接"
+            return "Check the module, MITM settings, certificate, and proxy/VPN connection"
         }
     }
 
     static func recoverySuggestion(for error: Error) -> String {
         (error as? Self)?.recoverySuggestion
-            ?? "检查模块、MITM、证书和代理/VPN连接"
+            ?? "Check the module, MITM settings, certificate, and proxy/VPN connection"
     }
 }
 
@@ -128,7 +128,7 @@ final class ThirdPartyProxyManager: ObservableObject {
             motionEnabled: MotionSimulationStore.shared.isEnabled
         ))
         guard response.success else {
-            throw ThirdPartyProxyError.rejected(response.error ?? "第三方代理拒绝保存坐标")
+            throw ThirdPartyProxyError.rejected(response.error ?? "The third-party proxy rejected the coordinate save request")
         }
         guard let latitude = response.latitude,
               let longitude = response.longitude,
@@ -138,9 +138,9 @@ final class ThirdPartyProxyManager: ObservableObject {
         }
         activeSettings = response
         connectionState = .connected(active: true)
-        RuntimeLogger.info("APP", "ThirdPartyProxy", "第三方代理已保存 WGS-84 坐标", details: [
-            "坐标标准": "WGS-84",
-            "取值字段": "coordinatePair.wgs84",
+        RuntimeLogger.info("APP", "ThirdPartyProxy", "Third-party proxy saved WGS-84 coordinates", details: [
+            "Coordinate system": "WGS-84",
+            "Source field": "coordinatePair.wgs84",
             "accuracy": String(favorite.accuracy)
         ])
         return response
@@ -150,7 +150,7 @@ final class ThirdPartyProxyManager: ObservableObject {
         guard let current = activeSettings,
               let latitude = current.latitude,
               let longitude = current.longitude else {
-            throw ThirdPartyProxyError.rejected("第三方虚拟定位尚未开启")
+            throw ThirdPartyProxyError.rejected("Third-party virtual location is not enabled")
         }
         guard await refreshAdvancedFeatureAvailability() else {
             throw ThirdPartyProxyError.moduleOutdated
@@ -162,7 +162,7 @@ final class ThirdPartyProxyManager: ObservableObject {
             motionEnabled: enabled
         ))
         guard response.success else {
-            throw ThirdPartyProxyError.rejected(response.error ?? "第三方代理拒绝更新运动状态")
+            throw ThirdPartyProxyError.rejected(response.error ?? "The third-party proxy rejected the motion-state update")
         }
         activeSettings = response
         return response
@@ -174,7 +174,7 @@ final class ThirdPartyProxyManager: ObservableObject {
 
     func validateVersion() async throws -> ThirdPartyProxyVersionResponse {
         guard !isRequesting else {
-            throw ThirdPartyProxyError.rejected("已有第三方代理请求正在执行")
+            throw ThirdPartyProxyError.rejected("Another third-party proxy request is already running")
         }
         isRequesting = true
         defer { isRequesting = false }
@@ -190,10 +190,10 @@ final class ThirdPartyProxyManager: ObservableObject {
                   version.isCompatible else {
                 throw ThirdPartyProxyError.moduleOutdated
             }
-            RuntimeLogger.info("APP", "ThirdPartyProxy", "第三方模块版本检测通过", details: [
-                "模块版本": version.moduleVersion,
-                "协议版本": String(version.protocolVersion),
-                "能力": version.capabilities.sorted().joined(separator: ",")
+            RuntimeLogger.info("APP", "ThirdPartyProxy", "Third-party module version check passed", details: [
+                "Module version": version.moduleVersion,
+                "Protocol version": String(version.protocolVersion),
+                "Capabilities": version.capabilities.sorted().joined(separator: ",")
             ])
             return version
         } catch let error as ThirdPartyProxyError {
@@ -214,10 +214,10 @@ final class ThirdPartyProxyManager: ObservableObject {
             RuntimeLogger.warning(
                 "APP",
                 "ThirdPartyProxy",
-                "第三方模块不支持高级功能",
+                "Third-party module does not support advanced features",
                 details: [
-                    "版本检测": error.localizedDescription,
-                    "处理建议": "基础坐标功能可继续使用；更新模块后可使用运动状态模拟"
+                    "Version check": error.localizedDescription,
+                    "Suggested fix": "Basic coordinate spoofing still works; update the module to use motion-state simulation"
                 ]
             )
             return false
@@ -227,11 +227,11 @@ final class ThirdPartyProxyManager: ObservableObject {
     func clear() async throws {
         let response = try await perform(action: .clear)
         guard response.success else {
-            throw ThirdPartyProxyError.rejected(response.error ?? "第三方代理清除坐标失败")
+            throw ThirdPartyProxyError.rejected(response.error ?? "The third-party proxy failed to clear its coordinates")
         }
         activeSettings = nil
         connectionState = .connected(active: false)
-        RuntimeLogger.info("APP", "ThirdPartyProxy", "第三方代理坐标已清除")
+        RuntimeLogger.info("APP", "ThirdPartyProxy", "Third-party proxy coordinates cleared")
     }
 
     private func validatedQueryState(_ response: ThirdPartyProxySettingsResponse) throws -> Bool {
@@ -240,10 +240,10 @@ final class ThirdPartyProxyManager: ObservableObject {
            response.longitude != nil {
             return true
         }
-        if response.error?.contains("无已保存") == true {
+        if response.error?.contains("无已保存") == true || response.error?.localizedCaseInsensitiveContains("no saved") == true {
             return false
         }
-        throw ThirdPartyProxyError.rejected(response.error ?? "第三方代理查询失败")
+        throw ThirdPartyProxyError.rejected(response.error ?? "Third-party proxy query failed")
     }
 
     private enum Action {
@@ -254,7 +254,7 @@ final class ThirdPartyProxyManager: ObservableObject {
 
     private func perform(action: Action) async throws -> ThirdPartyProxySettingsResponse {
         guard !isRequesting else {
-            throw ThirdPartyProxyError.rejected("已有第三方代理请求正在执行")
+            throw ThirdPartyProxyError.rejected("Another third-party proxy request is already running")
         }
         isRequesting = true
         defer { isRequesting = false }
@@ -294,12 +294,12 @@ final class ThirdPartyProxyManager: ObservableObject {
             return response
         } catch let error as ThirdPartyProxyError {
             connectionState = .failed(error.localizedDescription)
-            RuntimeLogger.error("APP", "ThirdPartyProxy", "第三方代理请求失败", error: error)
+            RuntimeLogger.error("APP", "ThirdPartyProxy", "Third-party proxy request failed", error: error)
             throw error
         } catch {
             let mapped = ThirdPartyProxyError.network(error.localizedDescription)
             connectionState = .failed(mapped.localizedDescription)
-            RuntimeLogger.error("APP", "ThirdPartyProxy", "第三方代理请求失败", error: error)
+            RuntimeLogger.error("APP", "ThirdPartyProxy", "Third-party proxy request failed", error: error)
             throw mapped
         }
     }
@@ -329,7 +329,7 @@ enum ThirdPartyProxyClient: String, CaseIterable, Identifiable {
     }
 
     var verificationText: String? {
-        self == .shadowrocket ? nil : "配置已提供，尚未验证"
+        self == .shadowrocket ? nil : "Configuration provided but not yet verified"
     }
 
     var moduleFileName: String {

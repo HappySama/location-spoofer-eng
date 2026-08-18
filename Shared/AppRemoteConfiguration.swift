@@ -134,22 +134,22 @@ enum AppRemoteConfigurationService {
                     continue
                 }
                 let configuration = try AppRemoteConfiguration.decode(data)
-                RuntimeLogger.info("APP", "Update", "远程版本配置加载成功", details: [
-                    "来源": url.host ?? "未知",
-                    "最新版本": configuration.latestVersion,
-                    "最低版本": configuration.minimumSupportedVersion,
-                    "社区征集客户端数": String(configuration.communityPromptClients.count)
+                RuntimeLogger.info("APP", "Update", "Remote version configuration loaded", details: [
+                    "Source": url.host ?? "Unknown",
+                    "Latest version": configuration.latestVersion,
+                    "Minimum version": configuration.minimumSupportedVersion,
+                    "Community contribution clients": String(configuration.communityPromptClients.count)
                 ])
                 return configuration
             } catch {
-                RuntimeLogger.info("APP", "Update", "版本配置源不可用，尝试下一地址", details: [
-                    "来源": url.host ?? "未知",
-                    "错误": error.localizedDescription
+                RuntimeLogger.info("APP", "Update", "Version configuration source unavailable; trying the next URL", details: [
+                    "Source": url.host ?? "Unknown",
+                    "Error": error.localizedDescription
                 ])
             }
         }
 
-        RuntimeLogger.warning("APP", "Update", "版本配置加载失败，继续使用内置配置")
+        RuntimeLogger.warning("APP", "Update", "Unable to load version configuration; using the built-in configuration")
         return nil
     }
 
@@ -171,16 +171,16 @@ enum AppRemoteConfigurationService {
                 }
                 return summary
             } catch {
-                RuntimeLogger.info("APP", "Update", "版本说明源不可用，尝试下一地址", details: [
-                    "来源": url.host ?? "未知",
-                    "版本": version,
-                    "错误": error.localizedDescription
+                RuntimeLogger.info("APP", "Update", "Release-notes source unavailable; trying the next URL", details: [
+                    "Source": url.host ?? "Unknown",
+                    "Version": version,
+                    "Error": error.localizedDescription
                 ])
             }
         }
 
-        RuntimeLogger.info("APP", "Update", "版本说明加载失败，将使用最新 Release 页面", details: [
-            "版本": version
+        RuntimeLogger.info("APP", "Update", "Unable to load release notes; using the latest Release page", details: [
+            "Version": version
         ])
         return nil
     }
@@ -207,7 +207,7 @@ enum AppRemoteConfigurationService {
         var inMainUpdates = false
         for rawLine in markdown.components(separatedBy: .newlines) {
             let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
-            if line == "## 主要更新" {
+            if line == "## Highlights" {
                 inMainUpdates = true
                 continue
             }

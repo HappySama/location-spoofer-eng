@@ -8,8 +8,8 @@ enum ProxyRuntimeMode: String, CaseIterable, Codable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .localWiFi: return "APP模式"
-        case .thirdParty: return "第三方代理模式"
+        case .localWiFi: return "App Mode"
+        case .thirdParty: return "Third-Party Proxy Mode"
         }
     }
 }
@@ -56,8 +56,8 @@ final class ProxyRuntimeModeStore: ObservableObject {
         defaults.set(true, forKey: Key.hasSelectedRuntimeMode)
         migrateLegacyInitializationIfNeeded()
         if changed {
-            RuntimeLogger.info("APP", "Mode", "代理运行模式已切换", details: [
-                "模式": mode.displayName
+            RuntimeLogger.info("APP", "Mode", "Proxy runtime mode changed", details: [
+                "Mode": mode.displayName
             ])
         }
     }
@@ -95,8 +95,8 @@ final class ProxyRuntimeModeStore: ObservableObject {
         }
         if legacyDefaults.bool(forKey: Key.legacySetupCompleted) {
             setInitialized(true, for: mode)
-            RuntimeLogger.info("APP", "Mode", "已迁移旧版模式初始化状态", details: [
-                "模式": mode.displayName
+            RuntimeLogger.info("APP", "Mode", "Migrated legacy mode initialization state", details: [
+                "Mode": mode.displayName
             ])
         }
         defaults.set(true, forKey: Key.initializationMigrationCompleted)

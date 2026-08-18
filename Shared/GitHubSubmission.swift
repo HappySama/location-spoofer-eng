@@ -19,23 +19,23 @@ enum GitHubSubmission {
         systemVersion: String
     ) -> String {
         """
-        ## 第三方客户端
+        ## Third-Party Client
         \(client.name)
 
-        ## 第三方客户端版本
-        请填写当前使用的第三方客户端版本。
+        ## Third-Party Client Version
+        Enter the version of the third-party client you are using.
 
-        ## iOS 版本
+        ## iOS Version
         iOS \(systemVersion)
 
-        ## 配置步骤
-        请描述模块导入、证书或解密设置、代理连接和最终验证过程。
+        ## Configuration Steps
+        Describe the module import, certificate or HTTPS decryption settings, proxy connection, and final verification process.
 
-        ## 截图与补充说明
-        请附上脱敏原图，并说明每张图片对应的步骤。
+        ## Screenshots and Additional Notes
+        Attach original screenshots with sensitive information removed, and explain which step each image shows.
 
-        ## README 收录署名
-        - [ ] 匿名收录，不在 README 展示投稿账号
+        ## README Credit
+        - [ ] Include this anonymously and do not show my GitHub account in the README
         """
     }
 }

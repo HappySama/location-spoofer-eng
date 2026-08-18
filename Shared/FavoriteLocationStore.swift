@@ -195,7 +195,7 @@ final class FavoriteLocationStore: ObservableObject {
         do {
             try persist()
         } catch {
-            RuntimeLogger.error("APP", "收藏", "保存收藏失败", error: error)
+            RuntimeLogger.error("APP", "Favorites", "Failed to save favorites", error: error)
         }
     }
 

@@ -232,12 +232,12 @@ enum RealtimeLocationTrace {
         level: RuntimeLogEntry.Level = .info
     ) {
         var metadata = details
-        metadata["样本时间"] = ISO8601DateFormatter().string(from: location.timestamp)
-        metadata["样本年龄秒"] = format(Date().timeIntervalSince(location.timestamp))
-        metadata["水平精度米"] = format(location.horizontalAccuracy)
-        metadata["垂直精度米"] = format(location.verticalAccuracy)
-        metadata["海拔米"] = format(location.altitude)
-        metadata["坐标有效"] = String(CLLocationCoordinate2DIsValid(location.coordinate))
+        metadata["Sample time"] = ISO8601DateFormatter().string(from: location.timestamp)
+        metadata["Sample age (seconds)"] = format(Date().timeIntervalSince(location.timestamp))
+        metadata["Horizontal accuracy (meters)"] = format(location.horizontalAccuracy)
+        metadata["Vertical accuracy (meters)"] = format(location.verticalAccuracy)
+        metadata["Altitude (meters)"] = format(location.altitude)
+        metadata["Valid coordinate"] = String(CLLocationCoordinate2DIsValid(location.coordinate))
         persist(level, message: message, details: metadata)
         debugCoordinate(message, location: location, details: metadata)
     }
@@ -264,10 +264,10 @@ enum RealtimeLocationTrace {
         details: [String: String]
     ) {
         switch level {
-        case .debug: RuntimeLogger.debug("APP", "实时定位", message, details: details)
-        case .info: RuntimeLogger.info("APP", "实时定位", message, details: details)
-        case .warning: RuntimeLogger.warning("APP", "实时定位", message, details: details)
-        case .error: RuntimeLogger.error("APP", "实时定位", message, details: details)
+        case .debug: RuntimeLogger.debug("APP", "Real-Time Location", message, details: details)
+        case .info: RuntimeLogger.info("APP", "Real-Time Location", message, details: details)
+        case .warning: RuntimeLogger.warning("APP", "Real-Time Location", message, details: details)
+        case .error: RuntimeLogger.error("APP", "Real-Time Location", message, details: details)
         }
     }
 

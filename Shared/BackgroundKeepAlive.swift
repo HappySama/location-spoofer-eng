@@ -18,7 +18,7 @@ final class BackgroundKeepAlive {
               let type = info[AVAudioSessionInterruptionTypeKey] as? UInt,
               type == AVAudioSession.InterruptionType.ended.rawValue else { return }
         restartAfterInterruption()
-        RuntimeLogger.info("APP", "KeepAlive", "音频中断恢复")
+        RuntimeLogger.info("APP", "KeepAlive", "Audio interruption ended")
     }
 
     func start() {
@@ -28,7 +28,7 @@ final class BackgroundKeepAlive {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, options: .mixWithOthers)
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {
-            RuntimeLogger.error("APP", "KeepAlive", "音频会话失败", error: error)
+            RuntimeLogger.error("APP", "KeepAlive", "Audio session failed", error: error)
             isActive = false
             return
         }
@@ -38,7 +38,7 @@ final class BackgroundKeepAlive {
         eng.attach(player)
         guard let fmt = AVAudioFormat(standardFormatWithSampleRate: 44100, channels: 1),
               let buf = AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: 44100 * 3) else {
-            RuntimeLogger.error("APP", "KeepAlive", "无法创建静音音频缓冲区")
+            RuntimeLogger.error("APP", "KeepAlive", "Unable to create silent audio buffer")
             isActive = false
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
             return
@@ -47,7 +47,7 @@ final class BackgroundKeepAlive {
         eng.connect(player, to: eng.mainMixerNode, format: fmt)
         eng.prepare()
         do { try eng.start() } catch {
-            RuntimeLogger.error("APP", "KeepAlive", "引擎启动失败", error: error)
+            RuntimeLogger.error("APP", "KeepAlive", "Audio engine failed to start", error: error)
             isActive = false
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
             return
@@ -56,7 +56,7 @@ final class BackgroundKeepAlive {
         player.play()
         engine = eng; playerNode = player
         UIApplication.shared.isIdleTimerDisabled = true
-        RuntimeLogger.info("APP", "KeepAlive", "后台保活已启动（静音音频）")
+        RuntimeLogger.info("APP", "KeepAlive", "Background keep-alive started using silent audio")
     }
 
     private func restartAfterInterruption() {
@@ -76,6 +76,6 @@ final class BackgroundKeepAlive {
         playerNode = nil; engine = nil
         UIApplication.shared.isIdleTimerDisabled = false
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        RuntimeLogger.info("APP", "KeepAlive", "后台保活已停止")
+        RuntimeLogger.info("APP", "KeepAlive", "Background keep-alive stopped")
     }
 }
